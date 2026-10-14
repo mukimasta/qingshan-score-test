@@ -48,7 +48,7 @@ h1{font-size:30px;margin:6px 0 6px;color:var(--red);letter-spacing:.03em}
 .dice #back{box-shadow:none;border-color:var(--hair);color:var(--muted)}
 .panel{background:var(--card) var(--grain);border:1px solid var(--hair);padding:4px 16px;margin-bottom:22px;box-shadow:0 18px 38px -24px rgba(40,40,20,.35)}
 .dim{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px 12px;padding:14px 0;border-bottom:1px dashed rgba(51,181,64,.45)}
-.dim:last-child{border-bottom:0}
+.dim:last-child,.dim:nth-last-child(2){border-bottom:0}
 .dim .n{font-family:var(--cond);color:var(--green);font-weight:600;font-size:15px;margin-right:6px}
 .dim b{font-size:15px}
 .dim p{grid-column:1/-1;margin:0;font-size:12.5px;color:var(--muted);line-height:1.6}
@@ -74,7 +74,7 @@ h2{font-size:18px;margin:0 0 4px}
 <div class="wrap">
   <p class="kicker">Sonification Lab</p>
   <h1>声音试验台</h1>
-  <p class="lead">几个开关互相独立，可以任意组合着听。改了开关会从头重新播放。点谱上的任何一张贴纸，可以单独听它；点“随机换一张乐谱”，可以多听几种贴法。</p>
+  <p class="lead">两个开关：扫描方式和模式。改了开关会从头重新播放。点谱上的任何一张贴纸，可以单独听它；点“随机换一张乐谱”，可以多听几种贴法。</p>
 
   <div class="sheetwrap"><div class="sheet"><svg viewBox="0 0 1000 1000" id="score"></svg></div></div>
 
@@ -88,22 +88,10 @@ h2{font-size:18px;margin:0 0 4px}
     <div class="dim"><div><span class="n">1</span><b>扫描方式</b></div>
       <div class="seg" data-k="scan"><button data-v="row">一行一行</button><button data-v="all">所有行一起</button></div>
       <p>一行一行：按贴的顺序，从第一行读到第六行。所有行一起：一条竖线从左扫到右，六行同时响。</p></div>
-    <div class="dim"><div><span class="n">2</span><b>量化</b></div>
-      <div class="seg" data-k="quant"><button data-v="off">关</button><button data-v="on">开</button></div>
-      <p>关：贴在哪就在哪响，时间是自由的。开：每张贴纸的起点对齐到十六分音符，贴纸内部的琶音和鼓点保持原来的流动。</p></div>
-    <div class="dim"><div><span class="n">3</span><b>铺底节拍</b></div>
-      <div class="seg" data-k="beat"><button data-v="off">关</button><button data-v="on">开</button></div>
-      <p>开：从头到尾垫一层很轻的鼓点，空白的地方也有东西在走。</p></div>
-    <div class="dim"><div><span class="n">4</span><b>音色</b></div>
-      <div class="seg" data-k="style"><button data-v="qs">青山</button><button data-v="el">电子</button></div>
-      <p>青山：钢琴、竖琴、贝斯、拨弦用真实乐器采样；手鼓木鱼、颂钵风铃是合成的。电子：最早的合成器音色，留着对比。</p></div>
-    <div class="dim"><div><span class="n">5</span><b>风声底</b></div>
-      <div class="seg" data-k="amb"><button data-v="off">关</button><button data-v="on">开</button></div>
-      <p>开：整首歌下面垫一层很轻的风过竹林的声音。</p></div>
-    <div class="dim"><div><span class="n">6</span><b>蓝色三角</b></div>
-      <div class="seg" data-k="blue"><button data-v="pizz">弦乐拨奏</button><button data-v="xylo">木琴</button></div>
-      <p>两种又尖又跳、但不刺耳的声音，换着听。</p></div>
-    <div class="dim"><div><b>速度</b></div>
+    <div class="dim"><div><span class="n">2</span><b>模式</b></div>
+      <div class="seg" data-k="mode"><button data-v="inst">乐器模式</button><button data-v="nature">自然模式</button></div>
+      <p>乐器模式：只有贴纸的乐器和轻轻的节拍。自然模式：在乐器模式下面，再铺一层风过竹林的声音。</p></div>
+    <div class="dim" hidden><div><b>速度</b></div>
       <div class="tempo"><input type="range" id="bpm" min="60" max="120" step="2" aria-label="速度"><output id="bpmOut"></output></div>
       <p id="lenNote"></p></div>
   </div>
@@ -248,7 +236,8 @@ function touched(st,primary){
   const set=new Set();for(const[x,y]of pts)for(let s=0;s<6;s++)if(s!==primary&&Math.abs(y-staffY(s,x))<=GAP*2+4)set.add(s);
   return[...set];
 }
-const opts={scan:'row',quant:'on',beat:'on',bpm:84,style:'qs',amb:'on',bass:'synth',blue:'pizz'};
+const opts={scan:'row',mode:'inst',quant:'on',beat:'on',bpm:84,style:'qs',amb:'off',bass:'synth',blue:'xylo'};
+const applyMode=()=>{opts.amb=opts.mode==='nature'?'on':'off'};
 const PASS_ALL=64; // "all rows" sweeps the page over 4 bars
 function buildEvents(){
   const ev=[];
@@ -419,13 +408,13 @@ svg.addEventListener('click',async e=>{const g=e.target.closest('.sticker');if(!
 function syncUI(){document.querySelectorAll('.seg').forEach(g=>g.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',opts[g.dataset.k]===b.dataset.v)));
   $('bpm').value=opts.bpm;$('bpmOut').textContent=opts.bpm+' BPM';
   const sd=step(),len=(opts.scan==='row'?96:PASS_ALL)*sd;$('lenNote').textContent=(opts.scan==='row'?`每行一小节，约 ${(16*sd).toFixed(1)} 秒；`:'整页扫过 4 小节；')+`整首约 ${Math.round(len)} 秒。`}
-document.querySelectorAll('.seg').forEach(g=>g.querySelectorAll('button').forEach(b=>b.onclick=()=>{opts[g.dataset.k]=b.dataset.v;syncUI();if(g.dataset.k==='style')renderList();if(playing){stop();play()}}));
+document.querySelectorAll('.seg').forEach(g=>g.querySelectorAll('button').forEach(b=>b.onclick=()=>{opts[g.dataset.k]=b.dataset.v;syncUI();if(g.dataset.k==='mode')applyMode();if(playing){stop();play()}}));
 $('bpm').oninput=e=>{opts.bpm=+e.target.value;setDelay();syncUI()};$('bpm').onchange=()=>{if(playing){stop();play()}};
 
 // instrument list with solo preview and mute
 const DEMO={circleS:{t:'circle',s:'S',x:300,y:0,r:0},circleL:{t:'circle',s:'L',x:300,y:0,r:0},wave:{t:'wave',s:'L',x:300,y:30,r:-20},dash:{t:'dash',s:'L',x:300,y:10,r:-12},scallop:{t:'scallop',s:'L',x:300,y:0,r:0},spiral:{t:'spiral',s:'L',x:300,y:0,r:0},tri:{t:'tri',s:'L',x:300,y:0,r:0}};
 const LIST_EL=[['circleS','circle','S','小圆点 · 木琴','一个音，有时是连着的两个音'],['circleL','circle','L','大圆点 · 钢琴','一个和弦'],['wave','wave','L','波浪线 · 竖琴','沿着贴纸的一串琶音；大的更响、更低、音更多'],['dash','dash','L','橙色虚线 · 贝斯','长音铺底，贴多长就响多久；斜着贴会走到另一头的音高'],['scallop','scallop','L','紫色锯齿 · 鼓','一段鼓点：贴得高偏军鼓和通鼓，贴得低偏底鼓；斜得厉害就是一串过门'],['spiral','spiral','L','螺旋 · 钟','清脆的钟声，慢慢抖起来，带回声'],['tri','tri','L','蓝色三角 · 8-bit','游戏机音色的小旋律；尖朝下就往下走']];
-const LIST_QS=[['circleS','circle','S','小圆点 · 钢琴','一个清楚的钢琴音，有时连着两个'],['circleL','circle','L','大圆点 · 钢琴和弦','三个音的和弦，快速拨开'],['wave','wave','L','波浪线 · 竖琴','一溜往一个方向的琶音：往右上斜就一路往上，往右下斜就一路往下，平的默认往上；越斜，每一步跨得越大'],['dash','dash','L','橙色虚线 · 贝斯','柔和的电贝斯，每半小节拨一下根音，贴多长弹多久；贴得高是 G，贴得低是 C'],['scallop','scallop','L','紫色锯齿 · 手鼓和木鱼','一段手打的鼓点：贴得高偏木鱼和拍边，贴得低偏手鼓；斜得厉害就是一串木鱼。背景节拍只有很轻的低音和沙锤，和它分开'],['spiral','spiral','L','螺旋 · 颂钵和风铃','大的是颂钵，两个很近的音慢慢拍出抖动；小的是风铃。后面跟着几声越来越轻的回音'],['tri','tri','L','蓝色三角 · 拨弦或木琴','短促、尖、跳出来的小旋律；尖朝下就往下走']];
+const LIST_QS=[['circleS','circle','S','小圆点 · 钢琴','一个清楚的钢琴音，有时连着两个'],['circleL','circle','L','大圆点 · 钢琴和弦','三个音的和弦，快速拨开'],['wave','wave','L','波浪线 · 竖琴','一溜往一个方向的琶音：往右上斜就一路往上，往右下斜就一路往下，平的默认往上；越斜，每一步跨得越大'],['dash','dash','L','橙色虚线 · 贝斯','柔和的电贝斯，每半小节拨一下根音，贴多长弹多久；贴得高是 G，贴得低是 C'],['scallop','scallop','L','紫色锯齿 · 手鼓和木鱼','一段手打的鼓点：贴得高偏木鱼和拍边，贴得低偏手鼓；斜得厉害就是一串木鱼。背景节拍只有很轻的低音和沙锤，和它分开'],['spiral','spiral','L','螺旋 · 颂钵和风铃','大的是颂钵，两个很近的音慢慢拍出抖动；小的是风铃。后面跟着几声越来越轻的回音'],['tri','tri','L','蓝色三角 · 木琴','短促、尖、跳出来的小旋律；尖朝下就往下走']];
 function renderList(){const L=opts.style==='qs'?LIST_QS:LIST_EL;
 $('insts').innerHTML=L.map(([g,t,s,name,desc])=>`<div class="inst"><svg viewBox="-50 -22 100 44" aria-hidden="true"><g transform="scale(${t==='circle'?.9:.55})">${parts(t,s).map(p=>p.fill?`<path d="${p.d}" fill="${p.fill}"/>`:`<path d="${p.d}" fill="none" stroke="${p.stroke}" stroke-width="${p.w}" stroke-linecap="round"/>`).join('')}</g></svg><div><b>${name}</b><span>${desc}</span></div><button class="try" data-g="${g}">听听</button><button class="mute" data-g="${g}" aria-pressed="${muted.has(g)}">静音</button></div>`).join('');
 document.querySelectorAll('.mute').forEach(b=>b.onclick=()=>{const g=b.dataset.g;muted.has(g)?muted.delete(g):muted.add(g);b.setAttribute('aria-pressed',muted.has(g))});
