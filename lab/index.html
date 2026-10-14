@@ -268,7 +268,7 @@ function audio(){
   ctx=new(window.AudioContext||window.webkitAudioContext)();
   try{const a=document.createElement('audio');a.loop=true;a.src=silentWav();a.play().catch(()=>{})}catch(e){}
   const comp=ctx.createDynamicsCompressor();comp.threshold.value=-16;comp.ratio.value=3;comp.attack.value=.005;comp.release.value=.2;comp.connect(ctx.destination);
-  master=ctx.createGain();master.gain.value=.85;master.connect(comp);
+  master=ctx.createGain();master.gain.value=.85;const shelf=ctx.createBiquadFilter();shelf.type='highshelf';shelf.frequency.value=4500;shelf.gain.value=-5;const top=ctx.createBiquadFilter();top.type='lowpass';top.frequency.value=9000;master.connect(shelf);shelf.connect(top);top.connect(comp); // take the edge off everything
   verb=ctx.createConvolver();const L=ctx.sampleRate*2.6,ir=ctx.createBuffer(2,L,ctx.sampleRate);for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<L;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/L,3.2)}verb.buffer=ir;const vg=ctx.createGain();vg.gain.value=.32;verb.connect(vg);vg.connect(comp);
   delay=ctx.createDelay(1);const fb=ctx.createGain(),dg=ctx.createGain(),dl=ctx.createBiquadFilter();dl.type='lowpass';dl.frequency.value=3200;fb.gain.value=.32;dg.gain.value=.22;delay.connect(dl);dl.connect(fb);fb.connect(delay);dl.connect(dg);dg.connect(comp);setDelay();
   noise=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);const nd=noise.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
@@ -362,8 +362,8 @@ const lowpass=(f,dest)=>{const l=ctx.createBiquadFilter();l.type='lowpass';l.fre
 Object.assign(Q,{
   marimba(e,t){samp('piano',e.m,t,{v:1,dest:lowpass(5200,bus(t,e.v*.85,{wet:.3}))})},           // small dot: a clear piano note
   piano(e,t){samp('piano',e.m,t,{v:1,dur:e.dur,rel:.8,dest:lowpass(4200,bus(t,e.v*.75,{wet:.4}))})}, // big dot: rolled chord
-  harp(e,t){samp('harp',e.m,t,{v:1,atk:.012,dest:lowpass(3000,bus(t,e.v*.7,{wet:.45}))})},
-  bass(e,t){samp('bass',e.m,t,{v:1,atk:.035,dur:e.dur*step(),rel:.35,dest:lowpass(650,bus(t,e.v*1.45,{wet:.1}))})},
+  harp(e,t){samp('harp',e.m,t,{v:1,atk:.03,dest:lowpass(1800,bus(t,e.v*.8,{wet:.5}))})},
+  bass(e,t){samp('bass',e.m,t,{v:1,atk:.06,dur:e.dur*step(),rel:.45,dest:lowpass(420,bus(t,e.v*1.7,{wet:.1}))})},
   chip(e,t){if(opts.blue==='xylo')samp('xylo',e.m,t,{v:1,dest:bus(t,e.v*1.25,{wet:.3})});else samp('pizz',e.m,t,{v:1,dest:bus(t,e.v*2.0,{wet:.3})})},
   hat(e,t){const out=bus(t,e.v*.55,{wet:.2}),g=ctx.createGain();env(g,t,1,.001,.05);g.connect(out);osc('sine',1900,t,t+.08,g);noiseHit(t,{f:1900,q:14,peak:.5,dec:.015,dest:out})},
   bkick(e,t){const out=bus(t,e.v*.5,{wet:.12}),g=ctx.createGain();env(g,t,1,.003,.4);g.connect(out);const o=osc('sine',90,t,t+.5,g);o.frequency.setValueAtTime(90,t);o.frequency.exponentialRampToValueAtTime(58,t+.09)},
