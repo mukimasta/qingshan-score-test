@@ -833,11 +833,14 @@ function stickerNotes(st,staff){
       const k1=flat?k0-2:kA,span=sB-sA,gap=span<1?.25:Math.max(span/(n-1),.5);
       for(let i=0;i<n;i++)add({inst:'harp',s:sA+i*gap,m:midiOf(k1+dir*stp*i,big?0:12),v:(big?.8:.55)*(1-i*.03),g:'wave'});
       break}
-    case 'dash':{ // bass groove; a tilted dash walks the bass line from its left end's height to its right end's
-      const hitsAt=big?[0,3,6,8,11,14]:[0,3,6],D=Math.max(-5,Math.min(5,Math.round((kB-kA)*.35)));
-      const fold=m=>{while(m>50)m-=12;while(m<31)m+=12;return m};
-      hitsAt.forEach((o,i)=>{const deg=k0-D/2+D*(hitsAt.length>1?i/(hitsAt.length-1):0);
-        add({inst:'bass',s:sA+o,m:fold(midiOf(Math.round(deg),-24)),v:(big?.85:.6)*(i===0?1:.82),dur:Math.min(3,(hitsAt[i+1]??o+3)-o)+.5,g:'dash'})});
+    case 'dash':{ // bass: flat dash = one held note; tilted dash = a quick walk from its left end's height to its right end's, repeats merged
+      const fold=m=>{while(m>50)m-=12;while(m<31)m+=12;return m},v=big?.85:.6;
+      const D=Math.max(-5,Math.min(5,Math.round((kB-kA)*.35)));
+      if(!D){add({inst:'bass',s:sA,m:fold(midiOf(k0,-24)),v,dur:big?6:3.5,g:'dash'});break}
+      const hitsAt=big?[0,1.5,3,4,5.5,7]:[0,1.5,3],end=hitsAt[hitsAt.length-1]+1.5,seq=[];
+      hitsAt.forEach((o,i)=>{const m=fold(midiOf(Math.round(k0-D/2+D*i/(hitsAt.length-1)),-24));
+        if(seq.length&&seq[seq.length-1].m===m)return;seq.push({o,m})});
+      seq.forEach((n,i)=>add({inst:'bass',s:sA+n.o,m:n.m,v:v*(i?.85:1),dur:((seq[i+1]?seq[i+1].o:end)-n.o)+.25,g:'dash'}));
       break}
     case 'scallop':{ // drum phrase; height picks the kit, a steep slope turns it into a tom fill
       const len=big?8:4,v=big?.9:.6,steep=Math.abs(kB-kA)>=3;
