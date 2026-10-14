@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>青山乐谱 宣传片</title>
+<style>
+@font-face{font-family:"Barlow Condensed";font-weight:500;src:url(assets/barlow-condensed-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-weight:600;src:url(assets/barlow-condensed-latin-600-normal.woff2) format("woff2")}
+html,body{margin:0;background:#111}canvas{display:block;width:960px;height:540px}
+</style></head><body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+// deterministic randomness, so audio and picture agree and re-renders match
+let __s=20261016;Math.random=()=>{__s=(__s*1664525+1013904223)>>>0;return __s/4294967296};
+const $=()=>null;
+</script>
+<script src="engine.js"></script>
+<script>
+// ================= timeline =================
+// the cover and the walk run free; from 02 on everything sits on the music's grid (84 bpm, 16 steps a bar)
+const BAR=16*60/84/4,ST=BAR/16;
+const OPEN=[2.8,4.8];                                   // the cover's triangle opens into the map
+const LEG=[[5.0,6.1,.02,.2],[8.7,9.8,.2,.5],[14.6,15.7,.5,.82]];   // walking: [start, end, from, to] along route A
+const STAY=[[6.1,8.7],[9.8,14.6],[15.7,20.9]];           // stop and listen: one place, one recording
+const MAPOUT=[20.65,21.45],T0=21.5;
+const at=(b,s=0)=>T0+b*BAR+s*ST;                         // bar 0 = start of 02
+const DUR=at(13.5);
+const S2=[OPEN[1]-.25,MAPOUT[0]+.35];                    // 01 listen
+const S3=[at(0),at(3)],KT=[0,.5,1,1.5,2,2.5].map(b=>at(b)); // 02 choose: a kind every half bar; the drum (4th) brings in the beat
+const S4=[at(3),at(5)],S5=[at(5),at(6)],S6=[at(6),at(12)],S7=[at(12),DUR]; // 03 stick · 04 scan · 05 play · end
+const W=1920,H=1080,cv=document.getElementById('c'),x=cv.getContext('2d');
+const CJK='"Noto Sans CJK SC","PingFang SC",sans-serif',COND='"Barlow Condensed","Arial Narrow",sans-serif';
+const C={paper:'#f6f5f0',khaki:'#bbaf8f',ink:'#1d1d1b',muted:'#7a776e',red:'#ed163c',green:'#33b540'};
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),seg=(t,a,b)=>clamp((t-a)/(b-a));
+const eo=p=>1-Math.pow(1-p,3),eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2,sine=p=>-(Math.cos(Math.PI*p)-1)/2;
+const back=p=>{const c=1.5;return 1+(c+1)*Math.pow(p-1,3)+c*Math.pow(p-1,2)};
+const lerp=(a,b,p)=>a+(b-a)*p;
+const IMG={};
+function loadI(k,src){return new Promise(r=>{const i=new Image();i.onload=()=>{IMG[k]=i;r()};i.src=src})}
+const grain=document.createElement('canvas');grain.width=grain.height=256;{const g=grain.getContext('2d'),d=g.createImageData(256,256);for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=14}g.putImageData(d,0,0)}
+let GRAIN=null;
+function spaced(s,X,Y,sp){for(const ch of s){x.fillText(ch,X,Y);X+=x.measureText(ch).width+sp}}
+const spacedW=(s,sp)=>{let w=0;for(const ch of s)w+=x.measureText(ch).width+sp;return w-sp};
+function roundRect(a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
+
+// ---------- pulses: every visual thing that makes a sound bumps when it sounds ----------
+const PULSE=new Map();
+function pulseAmt(id,t,k=.26){let a=0;for(const e of PULSE.get(id)||[]){const d=t-e;if(d>=0&&d<.45)a=Math.max(a,Math.exp(-d*9))}return 1+k*a}
+
+// ---------- the score sheet ----------
+const SH={x:880,y:70,s:940};
+const toCanvas=(u,v,dx=0)=>[SH.x+dx+u*SH.s/1000,SH.y+v*SH.s/1000];
+function sheet(t,{alpha=1,dx=0}={}){
+  if(alpha<=0)return;const y=SH.y,s=SH.s,sx=SH.x+dx;x.save();x.globalAlpha=alpha;
+  x.fillStyle=C.red;x.beginPath();x.arc(sx+s-40,y+s-150,170,0,7);x.fill();
+  x.fillStyle=C.green;x.beginPath();x.moveTo(sx-70,y+s*.38);x.lineTo(sx+230,y+s*.86);x.lineTo(sx-70,y+s*.86);x.closePath();x.fill();
+  x.strokeStyle=C.green;x.lineWidth=2.4;for(let i=0;i<7;i++){x.beginPath();x.moveTo(sx+s-160,y+70+i*12);x.lineTo(sx+s+90,y+20+i*12);x.stroke()}
+  x.save();x.shadowColor='rgba(30,30,20,.22)';x.shadowBlur=50;x.shadowOffsetY=20;x.fillStyle='rgba(230,231,227,.84)';x.fillRect(sx,y,s,s);x.restore();
+  const gr=x.createLinearGradient(sx,y,sx+s,y+s);gr.addColorStop(0,'rgba(250,250,248,.55)');gr.addColorStop(.5,'rgba(224,226,223,.35)');gr.addColorStop(1,'rgba(214,216,212,.45)');x.fillStyle=gr;x.fillRect(sx,y,s,s);
+  x.save();x.beginPath();x.rect(sx,y,s,s);x.clip();
+  const drift=Math.sin(t*.22)*.035;
+  const streak=(t0,w,a)=>{const dxx=s*.55,g=x.createLinearGradient(sx,y,sx,y+s);g.addColorStop(0,`rgba(255,255,255,${a})`);g.addColorStop(.55,`rgba(255,255,255,${a*.55})`);g.addColorStop(1,`rgba(255,255,255,${a*.12})`);
+    x.fillStyle=g;x.beginPath();x.moveTo(sx+s*(t0+drift),y);x.lineTo(sx+s*(t0+w+drift),y);x.lineTo(sx+s*(t0+w+drift)-dxx,y+s);x.lineTo(sx+s*(t0+drift)-dxx,y+s);x.closePath();x.fill()};
+  streak(.34,.17,.7);streak(.545,.035,.8);streak(.62,.012,.65);streak(.95,.1,.4);
+  x.restore();
+  x.strokeStyle='#fff';x.lineWidth=4;x.beginPath();x.moveTo(sx+2,y+s);x.lineTo(sx+2,y+2);x.lineTo(sx+s,y+2);x.stroke();
+  x.save();x.translate(sx,y);x.scale(s/1000,s/1000);
+  x.strokeStyle='#7f7e79';x.lineWidth=1.4;STAFF_C.forEach((_,k)=>{for(let i=-2;i<=2;i++){x.beginPath();x.moveTo(X0,staffY(k,X0)+i*GAP);x.lineTo(X1,staffY(k,X1)+i*GAP);x.stroke()}});
+  x.drawImage(IMG.head,HEAD.x,HEAD.y,HEAD.w,HEAD.h);x.drawImage(IMG.foot,FOOT.x,FOOT.y,FOOT.w,FOOT.h);
+  x.restore();x.restore()}
+function drawSticker(st,cx,cy,scale,rot,alpha=1){
+  if(alpha<=0)return;x.save();x.globalAlpha*=alpha;x.translate(cx,cy);x.rotate(rot*Math.PI/180);x.scale(scale,scale);
+  for(const p of parts(st.t,st.s)){const path=new Path2D(p.d);if(p.fill){x.fillStyle=p.fill;x.fill(path)}else{x.strokeStyle=p.stroke;x.lineWidth=p.w;x.lineCap='round';x.lineJoin='round';x.stroke(path)}}
+  x.restore()}
+
+// ---------- captions ----------
+function caption(t,a,b,num,en,l1,l2,sub){
+  const pin=eo(seg(t,a,a+.8)),pout=sine(seg(t,b-.55,b));const al=pin*(1-pout);if(al<=0)return;
+  x.save();x.globalAlpha=al;const dy=(1-pin)*34-pout*14;
+  x.fillStyle=C.red;x.font=`600 30px ${COND}`;spaced(`${num}  ${en}`,120,300+dy,7);
+  x.fillStyle=C.ink;x.font=`700 78px ${CJK}`;x.fillText(l1,114,410+dy);if(l2)x.fillText(l2,114,510+dy);
+  if(sub){x.fillStyle=C.muted;x.font=`400 30px ${CJK}`;x.fillText(sub,118,(l2?585:485)+dy)}
+  x.strokeStyle=C.red;x.lineWidth=5;x.lineCap='round';x.beginPath();x.moveTo(120,(l2?620:520)+dy);x.lineTo(120+lerp(0,140,eo(seg(t,a+.25,a+1.05))),(l2?614:514)+dy);x.stroke();
+  x.restore()}
+function brand(t,al){if(al<=0)return;x.save();x.globalAlpha=al*.9;const w=170,h=w*IMG.logo.height/IMG.logo.width;x.drawImage(IMG.logo,118,H-70-h,w,h);
+  x.fillStyle=C.muted;x.font=`500 22px ${COND}`;spaced('QINGSHAN MUSICAL SCORE',318,H-82,5);x.restore()}
+
+// ---------- cover: the kit's triangle opens into the film (words and triangle together) ----------
+const TRI=[[363.5,76],[8,691],[719.5,691]];
+function cover(t,open){
+  const iw=IMG.splash.width,ih=IMG.splash.height,dh=760,dw=dh*iw/ih,ix=(W-dw)/2,iy=(H-dh)/2-20,k=dw/iw;
+  const P=TRI.map(([a,b])=>[ix+a*k,iy+b*k]),c=[(P[0][0]+P[1][0]+P[2][0])/3,(P[0][1]+P[1][1]+P[2][1])/3];
+  const inr=(P[2][0]-P[1][0])/(2*Math.sqrt(3)),far=Math.hypot(Math.max(c[0],W-c[0]),Math.max(c[1],H-c[1])),S=1+(far/inr*1.05-1)*eio(open);
+  x.save();const path=new Path2D();path.rect(0,0,W,H);
+  if(open>0){const q=P.map(([a,b])=>[c[0]+(a-c[0])*S,c[1]+(b-c[1])*S]);path.moveTo(...q[0]);path.lineTo(...q[1]);path.lineTo(...q[2]);path.closePath()}
+  x.clip(path,'evenodd');x.fillStyle=C.khaki;x.fillRect(0,0,W,H);if(GRAIN)x.drawImage(GRAIN,0,0);
+  const al=eo(seg(t,.2,1.5));x.globalAlpha=al;x.translate(c[0],c[1]);x.scale(S,S);x.translate(-c[0],-c[1]+(1-al)*22);
+  x.drawImage(IMG.splash,ix,iy,dw,dh);
+  x.font=`500 26px ${COND}`;x.fillStyle='rgba(255,255,255,.88)';const s='RECORD THEM WITH STICKERS';spaced(s,(W-spacedW(s,8))/2,iy+dh+46,8);
+  x.restore()}
+
+// ---------- 01 listen: walking route A on the sound map; each sound rings when you reach it ----------
+const MAPPT=[[293,307],[322,295],[335,280],[347,262],[400,250],[470,237],[532,226],[571,213]].map(([a,b])=>[a/600,b/600]);
+const STOPS=[[.2,'竹林的风',-.35],[.5,'小溪流水',-.05],[.82,'鸟群',.35]];
+function walkP(t){let p=LEG[0][2];for(const[a,b,f,to]of LEG){if(t>=b)p=to;else if(t>a){p=lerp(f,to,sine(seg(t,a,b)));break}else break}return p}
+function routeAt(p){const L=[];let tot=0;for(let i=1;i<MAPPT.length;i++){const d=Math.hypot(MAPPT[i][0]-MAPPT[i-1][0],MAPPT[i][1]-MAPPT[i-1][1]);L.push(d);tot+=d}
+  let r=p*tot;for(let i=0;i<L.length;i++){if(r<=L[i]){const f=r/L[i];return[lerp(MAPPT[i][0],MAPPT[i+1][0],f),lerp(MAPPT[i][1],MAPPT[i+1][1],f)]}r-=L[i]}return MAPPT[MAPPT.length-1]}
+const CAM=[2.6,MAPOUT[0]+.4];
+function mapScene(t){
+  if(t<CAM[0]||t>MAPOUT[1]+.05)return;
+  const out=eio(seg(t,MAPOUT[0],MAPOUT[1])),u=sine(seg(t,CAM[0],CAM[1]+1.2));
+  const z=lerp(1.24,1.44,u),cxx=lerp(.49,.685,u),cy=.48,M=1180*z,mx=1335-cxx*M-out*460,my=540-cy*M;
+  const CX=830-out*460,CY=70,CW=1010,CHh=940;
+  x.save();x.globalAlpha=1-out;x.translate(CX+CW/2,CY+CHh/2);x.rotate(-.012);x.translate(-(CX+CW/2),-(CY+CHh/2));
+  x.save();x.shadowColor='rgba(40,40,20,.2)';x.shadowBlur=46;x.shadowOffsetY=16;x.fillStyle='#fff';x.fillRect(CX,CY,CW,CHh);x.restore();
+  x.beginPath();x.rect(CX,CY,CW,CHh);x.clip();
+  x.drawImage(IMG.map,mx,my,M,M);
+  const P=p=>{const q=routeAt(p);return[mx+q[0]*M,my+q[1]*M]};
+  const pw=walkP(t);
+  if(t>LEG[0][0]){x.strokeStyle=C.red;x.lineWidth=7;x.lineCap='round';x.lineJoin='round';x.beginPath();for(let i=0;i<=80;i++){const[u2,v2]=P(pw*i/80);i?x.lineTo(u2,v2):x.moveTo(u2,v2)}x.stroke()}
+  STOPS.forEach(([sp,label],k)=>{const ts=STAY[k][0],te=STAY[k][1];if(t<ts-.02)return;const[u2,v2]=P(sp),age=t-ts;
+    // rings keep rising from the spot while its sound plays, then settle
+    for(let r=0;r*.75<te-ts-.6;r++){const ag=age-r*.75;if(ag<0||ag>1.8)continue;x.strokeStyle=`rgba(237,22,60,${(1-ag/1.8)*.8})`;x.lineWidth=4;x.beginPath();x.arc(u2,v2,18+ag*120,0,7);x.stroke()}
+    const up=k%2===0,la=eo(seg(age,0,.45))*(1-.45*seg(t,te,te+.8));x.save();x.globalAlpha*=la;x.font=`700 40px ${CJK}`;const tw=x.measureText(label).width;
+    const lx=Math.min(u2-tw/2,CX+CW-tw-40),ly=up?v2-58-(1-la)*14:v2+92+(1-la)*14;x.fillStyle='rgba(255,255,255,.9)';x.fillRect(lx-14,ly-44,tw+28,58);x.fillStyle=C.ink;x.fillText(label,lx,ly);x.restore()});
+  if(t>LEG[0][0]-.6){const[u2,v2]=P(pw),a=eo(seg(t,LEG[0][0]-.6,LEG[0][0]));x.globalAlpha*=a;x.fillStyle=C.red;x.beginPath();x.arc(u2,v2,16*(.6+.4*a),0,7);x.fill();x.strokeStyle='#fff';x.lineWidth=5;x.stroke()}
+  x.restore()}
+function listenCredit(t){const a=eo(seg(t,S2[0]+1.4,S2[0]+2.2))*(1-sine(seg(t,S2[1]-.6,S2[1]-.05)));if(a<=0)return;
+  x.save();x.globalAlpha=a*.85;x.fillStyle=C.muted;x.font=`400 24px ${CJK}`;x.fillText('声音录自青山声音地图',120,700);x.restore()}
+
+// ---------- 02 choose: six kinds; the drum card starts the beat ----------
+const KINDS=[['circle','L','圆点','钢琴'],['wave','L','波浪','竖琴'],['dash','L','虚线','贝斯'],['scallop','L','半圆','手鼓'],['spiral','L','螺旋','钟声'],['tri','L','三角','木琴']];
+const LEN0={circle:78,wave:168,dash:150,scallop:146,spiral:60,tri:97},CARDOUT=[at(3)-.75,at(3)-.05];
+function chooseScene(t){
+  if(t<S3[0]-.3||t>CARDOUT[1]+.05)return;const out=sine(seg(t,CARDOUT[0],CARDOUT[1]));
+  KINDS.forEach(([tt,s,name,inst],i)=>{const t0=KT[i]-.18;if(t<t0)return;const p=seg(t,t0,t0+.5),col=i%3,row=Math.floor(i/3);
+    const cx=1080+col*330-out*140,cy=300+row*450+lerp(36,0,eo(p));
+    x.save();x.globalAlpha=(1-out)*clamp(p*2.2);
+    x.save();x.shadowColor='rgba(40,40,20,.12)';x.shadowBlur=30;x.shadowOffsetY=12;x.fillStyle='rgba(253,252,248,.94)';x.translate(cx,cy);x.rotate(((i*37)%7-3)*.006);x.fillRect(-145,-200,290,400);x.restore();
+    const fit=Math.min(2.6,220/LEN0[tt]),bump=pulseAmt('card'+i,t,.2);
+    drawSticker({t:tt,s},cx,cy-50,fit*back(clamp(p))*bump,tt==='dash'?-20:0);
+    x.fillStyle=C.ink;x.font=`700 44px ${CJK}`;x.textAlign='center';x.fillText(name,cx,cy+110);
+    x.fillStyle=C.red;x.font=`500 32px ${CJK}`;x.fillText(inst,cx,cy+160);x.textAlign='left';x.restore()})}
+
+// ---------- 03 stick · 04 scan · 05 play ----------
+const STK=[...SAMPLE_STICKERS].sort((p,q)=>readingOrder(p)-readingOrder(q)); // the website's example score, unchanged
+const land=i=>at(3,2+i);
+function sheetScenes(t){
+  if(t<S4[0]-.8||t>S7[0]+1)return;
+  const sin=eo(seg(t,S4[0]-.75,S4[0]+.25)),sout=eio(seg(t,S7[0]-.25,S7[0]+.55)),dx=(1-sin)*720+sout*900;
+  sheet(t,{alpha:sin*(1-sout),dx});
+  x.save();x.globalAlpha=sin*(1-sout);
+  const pp=(t-S6[0])/ST;
+  if(pp>=0&&pp<=96){const row=Math.min(5,Math.floor(pp/16)),u=X0+(X1-X0)*((pp-row*16)/16);
+    const[a1,b1]=toCanvas(X0,staffY(row,X0)-46,dx),[a2]=toCanvas(X1,0,dx);x.fillStyle='rgba(51,181,64,.10)';x.fillRect(a1,b1,a2-a1,92*SH.s/1000);
+    const[ux,uy]=toCanvas(u,staffY(row,u),dx);x.strokeStyle=C.green;x.lineWidth=5;x.beginPath();x.moveTo(ux,uy-56);x.lineTo(ux,uy+56);x.stroke()}
+  STK.forEach((st,i)=>{const tl=land(i),fl=.5;if(t<tl-fl)return;const f=eo(seg(t,tl-fl,tl)),[tx,ty]=toCanvas(st.x,st.y,dx);
+    const r0=((i*73)%100)/100-.5,fx=lerp(tx+r0*300,tx,f),fy=lerp(H+90,ty,f)-Math.sin(f*Math.PI)*120,rot=lerp(st.r+(r0>0?50:-50),st.r,f);
+    let sc=SH.s/1000*(1+.3*(1-f));if(t>tl)sc*=1+Math.exp(-(t-tl)*10)*.1;sc*=pulseAmt(st.id,t);
+    drawSticker(st,fx,fy,sc,rot)});
+  x.restore();
+  // scan: corner brackets turn green, a line sweeps down, then a flash right on the downbeat
+  const ps=eo(seg(t,S5[0]-.25,S5[0]+.4)),pq=sine(seg(t,S6[0]+.1,S6[0]+.8));if(ps>0&&pq<1){
+    x.save();x.globalAlpha=ps*(1-pq);const found=t>at(5,9);const L=90,cs=[[SH.x+dx,SH.y,1,1],[SH.x+dx+SH.s,SH.y,-1,1],[SH.x+dx,SH.y+SH.s,1,-1],[SH.x+dx+SH.s,SH.y+SH.s,-1,-1]];
+    const grow=1+.04*(1-ps);x.strokeStyle=found?C.green:'#fff';x.lineWidth=10;x.lineCap='round';
+    for(const[a,b,sx,sy]of cs){const ax=SH.x+dx+SH.s/2+(a-SH.x-dx-SH.s/2)*grow,by=SH.y+SH.s/2+(b-SH.y-SH.s/2)*grow;x.beginPath();x.moveTo(ax,by+sy*L);x.lineTo(ax,by);x.lineTo(ax+sx*L,by);x.stroke()}
+    const sw=seg(t,at(5,1),at(5,13));if(sw>0&&sw<1){const yy=SH.y+SH.s*sine(sw);const g=x.createLinearGradient(0,yy-120,0,yy);g.addColorStop(0,'rgba(51,181,64,0)');g.addColorStop(1,'rgba(51,181,64,.28)');x.fillStyle=g;x.fillRect(SH.x+dx,yy-120,SH.s,120);x.fillStyle=C.green;x.fillRect(SH.x+dx,yy-3,SH.s,6)}
+    x.restore()}
+  const fl=t-S6[0];if(fl>-.06&&fl<.5){const a=fl<0?(fl+.06)/.06:1-fl/.5;x.fillStyle=`rgba(255,255,255,${.8*a})`;x.fillRect(0,0,W,H)}
+  const rc=eo(seg(t,S6[0]+.05,S6[0]+.5))*(1-sine(seg(t,S6[0]+3.3,S6[0]+3.9)));if(rc>0){x.save();x.globalAlpha=rc;x.fillStyle=C.ink;roundRect(SH.x+dx+SH.s/2-215,SH.y+SH.s-120+(1-rc)*20,430,84,42);x.fill();
+    x.fillStyle='#fff';x.font=`700 38px ${CJK}`;x.textAlign='center';x.fillText(`读到了 ${STK.length} 枚贴纸`,SH.x+dx+SH.s/2,SH.y+SH.s-64+(1-rc)*20);x.textAlign='left';x.restore()}
+}
+function player(t){const a=S6[0],b=S6[1];const al=eo(seg(t,a+.35,a+1.05))*(1-sine(seg(t,b-.35,b+.25)));if(al<=0)return;
+  x.save();x.globalAlpha=al;const cx=180,cy=760;x.translate(cx,cy);x.rotate((t-a)*1.6);x.fillStyle=C.red;x.beginPath();x.arc(0,0,62,0,7);x.fill();
+  x.strokeStyle='rgba(255,255,255,.3)';x.lineWidth=2;for(const r of[46,34]){x.beginPath();x.arc(0,0,r,0,7);x.stroke()}x.fillStyle='#fff';x.beginPath();x.arc(40,-26,5,0,7);x.fill();x.restore();
+  x.save();x.globalAlpha=al;const p=clamp((t-a)/(b-a));x.fillStyle='rgba(29,29,27,.15)';x.fillRect(280,758,440,6);x.fillStyle=C.green;x.fillRect(280,758,440*p,6);
+  x.fillStyle=C.ink;x.font=`600 30px ${CJK}`;x.fillText(`第 ${Math.min(6,Math.floor(p*6)+1)} 行`,280,730);x.fillStyle=C.muted;x.font=`500 26px ${COND}`;x.fillText(`0:${String(Math.floor(p*17)).padStart(2,'0')} / 0:17`,620,730);x.restore()}
+
+// ---------- end card ----------
+function endCard(t){const a=S7[0];if(t<a)return;
+  const p=eo(seg(t,a+.45,a+1.4)),q=eo(seg(t,a+.8,a+1.7));
+  x.save();x.globalAlpha=p;
+  x.fillStyle=C.red;x.beginPath();x.arc(1600,250,lerp(0,190,eo(seg(t,a+.1,a+1.1))),0,7);x.fill();
+  const g=eo(seg(t,a+.3,a+1.2));x.fillStyle=C.green;x.beginPath();x.moveTo(-40,H);x.lineTo(-40+230*g,H-210*g);x.lineTo(-40+460*g,H);x.closePath();x.fill();
+  x.strokeStyle=C.green;x.lineWidth=2.5;for(let i=0;i<8;i++){const l=eo(seg(t,a+.4+i*.05,a+1.4+i*.05));x.beginPath();x.moveTo(1380,960+i*13);x.lineTo(1380+600*l,960+i*13-90*l);x.stroke()}
+  const hw=1100,hh=hw*IMG.head.height/IMG.head.width;x.drawImage(IMG.head,(W-hw)/2,300+(1-p)*30,hw,hh);
+  x.globalAlpha=q;x.fillStyle=C.ink;x.font=`500 44px ${CJK}`;x.textAlign='center';x.fillText('一份没有标准答案的青山村声音导览',W/2,700+(1-q)*20);x.textAlign='left';
+  x.fillStyle=C.muted;x.font=`500 28px ${COND}`;const s='A SOUND GUIDE TO QINGSHAN VILLAGE';spaced(s,(W-spacedW(s,8))/2,760+(1-q)*20,8);
+  const r=eo(seg(t,a+1.5,a+2.3));x.globalAlpha=r;x.fillStyle=C.red;x.font=`700 36px ${CJK}`;x.textAlign='center';x.fillText('走一走，听一听，贴下你的青山',W/2,860);x.textAlign='left';
+  x.restore()}
+
+// ================= one frame =================
+function draw(t){
+  x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.fillStyle=C.paper;x.fillRect(0,0,W,H);
+  mapScene(t);chooseScene(t);sheetScenes(t);player(t);listenCredit(t);
+  caption(t,S2[0]+.1,S2[1]-.2,'01','LISTEN','沿着路线走','听见经过你的声音','竹林的风、小溪、鸟群，都在路上');
+  caption(t,S3[0]-.1,S3[1]-.3,'02','CHOOSE','每一种声音','选一枚贴纸','六种形状，对应六种乐器');
+  caption(t,S4[0]-.05,S4[1]-.05,'03','STICK','贴在乐谱上','越高，音越高','从第一行贴到最后一行');
+  caption(t,S5[0]-.05,S5[1]+.15,'04','SCAN','扫一扫','读出你的乐谱','手机对准，自动识别');
+  caption(t,S6[0]+.3,S6[1]-.2,'05','PLAY','它变成了','一首只属于你的歌','一行一行，奏出你走过的青山');
+  brand(t,seg(t,S2[0]+.5,S2[0]+1.4)*(1-seg(t,S7[0]-.2,S7[0]+.4)));
+  endCard(t);
+  if(GRAIN)x.drawImage(GRAIN,0,0);
+  if(t<OPEN[1]+.02)cover(t,seg(t,OPEN[0],OPEN[1]));
+  const bk=seg(t,DUR-1.15,DUR);if(bk>0){x.save();x.globalAlpha=sine(bk);x.fillStyle=C.khaki;x.fillRect(0,0,W,H);if(GRAIN)x.drawImage(GRAIN,0,0);x.restore()}
+}
+
+// ================= music =================
+// Sticker sounds (02 cards and the 05 score) come straight from the website's engine, untouched.
+// The film's own music (chords, bass, taps, the beat) only fills 02's drum entry → 03 → 04, and the closing chord.
+const NM={C:0,D:2,E:4,F:5,G:7,A:9,B:11},mid=s=>{const m=s.match(/^([A-G])(#?)(-?\d)$/);return 12*(+m[3]+1)+NM[m[1]]+(m[2]?1:0)};
+const CARD=[['circle',-3,0],['wave',0,FLAT_R()],['dash',2,FLAT_R()],['scallop',0,FLAT_R()],['spiral',0,0],['tri',-1,0]]
+  .map(([t,k,r],i)=>{const x0=470,st={id:'card'+i,t,s:'L',x:x0,y:0,r};st.y=staffY(2,x0)-k*GAP/2;return st});
+function FLAT_R(){return Math.atan(SLOPE)*180/Math.PI}
+function musicEvents(){
+  const E=[],add=(inst,t,o={})=>E.push({inst,at:t,v:.6,...o});
+  // --- 02: each card plays exactly what that sticker plays on the website
+  CARD.forEach((st,i)=>{const notes=stickerNotes(st,2),h0=Math.min(...notes.map(n=>n.s));for(const n of notes)E.push({...n,at:KT[i]+(n.s-h0)*ST+(n.dt||0),vid:'card'+i})});
+  // --- the beat: the website's own light beat (soft kick + hats) with the 半圆's hand-drum phrase on top;
+  //     it starts with the 4th card and runs straight into the score, where the website's beat simply carries on
+  const webBeat=(bar,{light=false}={})=>{const o=at(bar);
+    [[0,.5],[10,.3]].forEach(([s,v])=>add('bkick',o+s*ST,{v,vid:'card3'}));
+    for(let s=0;s<16;s+=2)add('bhat',o+(s+(s%4?.08:0))*ST,{v:(s%4?.14:.22)*(light?.8:1)})};
+  const handDrum=(bar,v=.75)=>{const DR={K:'kick',S:'snare',H:'hat'};[...'K.HKS.KS'].forEach((c,i)=>{if(c!=='.')add(DR[c],at(bar,8+i),{v:(c==='H'?.5:1)*v,m:60,vid:'card3'})})};
+  [2,3,4].forEach(b=>{webBeat(b);handDrum(b,b===2?.95:.85)});
+  webBeat(5,{light:true});
+  // --- 03 stick: bass, a soft chord each bar, and the landings tap out the chord (an arpeggio, nudged by each sticker's height)
+  [['C2',0,5],['G2',6,2],['E2',10,3],['G2',14,2]].forEach(([n,s,d])=>add('bass',at(3,s),{m:mid(n),v:.62,dur:d}));
+  [['A1',0,5],['E2',6,2],['A2',10,3],['G2',14,2]].forEach(([n,s,d])=>add('bass',at(4,s),{m:mid(n),v:.62,dur:d}));
+  [['F2',0,7],['G2',8,7]].forEach(([n,s,d])=>add('bass',at(5,s),{m:mid(n),v:.6,dur:d}));
+  const chord=(t,notes,v,dur)=>notes.forEach((n,i)=>add('piano',t+i*.02,{m:mid(n),v,dur}));
+  chord(at(3),['C3','G3','D4','E4'],.24,2.2);chord(at(4),['A2','E3','G3','C4'],.24,2.2);chord(at(5),['F3','A3','C4','E4'],.22,1.4);chord(at(5,8),['G3','C4','D4'],.2,1.3);
+  const LAD={3:['C4','D4','E4','G4','C5','D5','E5','G5','C6'],4:['A3','C4','E4','G4','A4','C5','E5','G5','A5']},CONT=[2,4,5,6,7,6,5,4];
+  STK.forEach((st,i)=>{const t=land(i),bar=t<at(4)-.01?3:4,k=kAt(st.x,st.y,nearestStaff(st.x,st.y)),idx=clamp(CONT[i%8]+(k>2?1:k<-2?-1:0),0,8);
+    add('chip',t,{m:mid(LAD[bar][idx]),v:.24})});
+  // --- 04 scan: a harp climbs with the scan line, a short tom fill, and the score starts on the downbeat
+  ['F3','A3','C4','E4','F4','A4','C5','E5','F5','A5','C6','E6'].forEach((n,i)=>add('harp',at(5,1+i),{m:mid(n),v:.18+i*.022}));
+  [60,64,67,72].forEach((m,i)=>add('tom',at(5,12+i),{m,v:.36+i*.05}));
+  // --- 05 play: the website's example score, played exactly as the website plays it
+  STICKERS=STK;const plan=buildEvents();
+  for(const e of plan.ev)E.push({...e,at:at(6)+e.at*ST+(e.dt||0),vid:e.id});
+  // --- end: one closing chord
+  chord(at(12),['C3','G3','C4','E4','G4'],.42,4.2);add('bass',at(12),{m:mid('C2'),v:.62,dur:14});
+  return E}
+
+// ================= field recordings (青山声音地图 + CC0) =================
+const REC={strings:'sfx/qs_xian_chan_lim.wav',night:'sfx/qs_yuye_chongming.mp3',bamboo:'sfx/335891__yoyodaman234__bamboo-creaking-in-wind.mp3',
+  leaves:'sfx/421791__markbolden__walking-through-leaves.wav',creek:'sfx/qs_xiaogou.mp3',birds:'sfx/qs_niaoqun.mp3'};
+function recordings(){
+  const R=[];
+  // opening: 青山之弦、和蝉合奏 with 龙坞里雨夜的虫鸣, both from their very beginning
+  R.push({k:'strings',at:0,off:0,dur:6.4,db:-30,hp:130,env:[[0,0],[.9,1],[3.6,1],[6.3,0]]});
+  R.push({k:'night',at:0,off:0,dur:6.0,db:-37,hp:450,lp:9000,env:[[0,0],[1.4,.9],[3.8,.9],[5.9,0]]});
+  // the walk: footsteps only while moving; at each place, that place's recording on its own
+  const LV=[.35,2.75,5.0];
+  LEG.forEach(([a,b],i)=>{const pan=[[-.45,-.3],[-.25,0],[.05,.35]][i];R.push({k:'leaves',at:a-.1,off:LV[i],dur:b-a+.35,db:-32,hp:70,pan,env:[[a-.1,0],[a+.15,1],[b-.15,1],[b+.2,0]]})});
+  const ST3=[{k:'bamboo',off:86,db:-30,hp:200},{k:'creek',off:0,db:-30,hp:110},{k:'birds',off:0,db:-31,hp:260}];
+  STAY.forEach(([a,b],i)=>{const c=ST3[i];R.push({...c,at:a-.05,dur:b-a+.1,pan:STOPS[i][2],env:[[a-.05,0],[a+.35,1],[b-1.1,.9],[b+.05,0]]})});
+  // end: the closing chord with the night insects
+  const e0=at(12);R.push({k:'night',at:e0-.2,off:24.5,dur:DUR-e0+.2,db:-35,hp:450,lp:9000,env:[[e0-.2,0],[e0+1,.9],[DUR-1.6,.9],[DUR,0]]});
+  return R}
+
+// ================= offline render =================
+async function renderAudio(){
+  const SR=44100,len=Math.ceil(SR*(DUR+.3));const off=new OfflineAudioContext(2,len,SR);
+  window.AudioContext=function(){return off};audio();await loadSamples();
+  const recBus=off.createGain(),rc=off.createDynamicsCompressor(),lim=off.createDynamicsCompressor();
+  rc.threshold.value=-20;rc.knee.value=6;rc.ratio.value=3;rc.attack.value=.004;rc.release.value=.25;lim.threshold.value=-12;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.001;lim.release.value=.12;
+  recBus.connect(rc);rc.connect(lim);lim.connect(off.destination);
+  const bufs={};await Promise.all(Object.entries(REC).map(async([k,u])=>{bufs[k]=await off.decodeAudioData(await (await fetch(u)).arrayBuffer())}));
+  const rmsOf=(b,o,d,hp)=>{const c=b.getChannelData(0),s0=Math.floor(o*b.sampleRate),s1=Math.min(c.length,Math.floor((o+d)*b.sampleRate));
+    const a=Math.exp(-2*Math.PI*(hp||40)/b.sampleRate);let y=0,px=0,acc=0;for(let i=s0;i<s1;i++){const v=c[i];y=a*(y+v-px);px=v;acc+=y*y}return Math.sqrt(acc/Math.max(1,s1-s0))};
+  for(const r of recordings()){const b=bufs[r.k],src=off.createBufferSource();src.buffer=b;let node=src;
+    if(r.hp){const f=off.createBiquadFilter();f.type='highpass';f.frequency.value=r.hp;f.Q.value=.7;node.connect(f);node=f}
+    if(r.lp){const f=off.createBiquadFilter();f.type='lowpass';f.frequency.value=r.lp;node.connect(f);node=f}
+    const norm=Math.pow(10,r.db/20)/Math.max(1e-5,rmsOf(b,r.off,r.dur,r.hp)),g=off.createGain();g.gain.setValueAtTime(0,0);
+    for(const[t,v]of r.env)g.gain.linearRampToValueAtTime(v*norm,Math.max(0,t));
+    const p=off.createStereoPanner();if(Array.isArray(r.pan)){p.pan.setValueAtTime(r.pan[0],r.at);p.pan.linearRampToValueAtTime(r.pan[1],r.at+r.dur)}else p.pan.value=r.pan||0;
+    node.connect(g);g.connect(p);p.connect(recBus);src.start(Math.max(0,r.at),r.off,r.dur)}
+  for(const e of musicEvents()){const f=Q[e.inst];if(f&&e.at<DUR)try{f(e,e.at)}catch(err){console.log('skip',e.inst,err.message)}}
+  const buf=await off.startRendering();
+  const N=Math.round(DUR*SR),out=[buf.getChannelData(0).slice(0,N),buf.getChannelData(1).slice(0,N)];
+  for(let c=0;c<2;c++)for(let i=0;i<N;i++){const f=Math.min(1,i/(SR*.4),(N-1-i)/(SR*1.0));out[c][i]*=Math.max(0,f)}
+  let peak=0;for(let c=0;c<2;c++)for(let i=0;i<N;i++)peak=Math.max(peak,Math.abs(out[c][i]));const g=peak>.98?.98/peak:1;
+  const dv=new DataView(new ArrayBuffer(44+N*4)),w=(o,s)=>{for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i))};
+  w(0,'RIFF');dv.setUint32(4,36+N*4,true);w(8,'WAVE');w(12,'fmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,2,true);dv.setUint32(24,SR,true);dv.setUint32(28,SR*4,true);dv.setUint16(32,4,true);dv.setUint16(34,16,true);w(36,'data');dv.setUint32(40,N*4,true);
+  for(let i=0;i<N;i++)for(let c=0;c<2;c++)dv.setInt16(44+i*4+c*2,Math.max(-1,Math.min(1,out[c][i]*g))*32767,true);
+  const bytes=new Uint8Array(dv.buffer);let s='';for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return{b64:btoa(s),peak}}
+
+window.ready=(async()=>{await Promise.all([loadI('splash','assets/splash.png'),loadI('map','assets/map.jpg'),loadI('head','assets/sheet-head.png'),loadI('foot','assets/sheet-foot.png'),loadI('logo','assets/logo.png')]);
+  await document.fonts.load(`600 30px "Barlow Condensed"`);await document.fonts.load(`500 30px "Barlow Condensed"`);await document.fonts.load(`700 40px ${CJK}`);await document.fonts.load(`400 30px ${CJK}`);
+  GRAIN=document.createElement('canvas');GRAIN.width=W;GRAIN.height=H;const g=GRAIN.getContext('2d');g.fillStyle=g.createPattern(grain,'repeat');g.fillRect(0,0,W,H);
+  for(const e of musicEvents())if(e.vid)(PULSE.get(e.vid)||PULSE.set(e.vid,[]).get(e.vid)).push(e.at);
+  return DUR})();
+window.frame=(t,q=.93)=>{draw(t);return cv.toDataURL('image/jpeg',q)};
+if(!navigator.webdriver)window.ready.then(()=>{const t0=performance.now();(function loop(){draw(((performance.now()-t0)/1000)%DUR);requestAnimationFrame(loop)})()});
+</script></body></html>
