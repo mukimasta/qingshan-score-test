@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>青山乐谱 宣传片</title>
+<style>
+@font-face{font-family:"Barlow Condensed";font-weight:500;src:url(assets/barlow-condensed-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-weight:600;src:url(assets/barlow-condensed-latin-600-normal.woff2) format("woff2")}
+html,body{margin:0;background:#111}canvas{display:block;width:960px;height:540px}
+</style></head><body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+// deterministic randomness, so audio and picture agree and re-renders match
+let __s=20261016;Math.random=()=>{__s=(__s*1664525+1013904223)>>>0;return __s/4294967296};
+const $=()=>null;
+</script>
+<script src="engine.js"></script>
+<script>
+// ================= film timeline (seconds), on the music's bar grid: 84 bpm, 1 bar = 16 steps =================
+const BAR=16*60/84/4,T=b=>b*BAR,DUR=T(19);
+const W=1920,H=1080,cv=document.getElementById('c'),x=cv.getContext('2d');
+const CJK='"Noto Sans CJK SC","PingFang SC",sans-serif',COND='"Barlow Condensed","Arial Narrow",sans-serif';
+const C={paper:'#f6f5f0',khaki:'#bbaf8f',ink:'#1d1d1b',muted:'#7a776e',red:'#ed163c',green:'#33b540'};
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),seg=(t,a,b)=>clamp((t-a)/(b-a));
+const eo=p=>1-Math.pow(1-p,3),eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2,back=p=>{const c=1.6;return 1+(c+1)*Math.pow(p-1,3)+c*Math.pow(p-1,2)};
+const lerp=(a,b,p)=>a+(b-a)*p;
+const IMG={};
+function loadI(k,src){return new Promise(r=>{const i=new Image();i.onload=()=>{IMG[k]=i;r()};i.src=src})}
+// paper grain, made once
+const grain=document.createElement('canvas');grain.width=grain.height=256;{const g=grain.getContext('2d'),d=g.createImageData(256,256);for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=14}g.putImageData(d,0,0)}
+let GRAIN=null;
+
+// ---------- the score: sheet units -> canvas ----------
+const SH={x:880,y:70,s:940};
+function sheet(t,{alpha=1,dx=0}={}){
+  const {y,s}=SH,sx=SH.x+dx;if(alpha<=0)return;x.save();x.globalAlpha=alpha;
+  // kit marks behind the translucent paper
+  x.fillStyle=C.red;x.beginPath();x.arc(sx+s-40,sy(y)+s-150,170,0,7);x.fill();
+  x.fillStyle=C.green;x.beginPath();x.moveTo(sx-70,y+s*.38);x.lineTo(sx+230,y+s*.86);x.lineTo(sx-70,y+s*.86);x.closePath();x.fill();
+  x.strokeStyle=C.green;x.lineWidth=2.4;for(let i=0;i<7;i++){x.beginPath();x.moveTo(sx+s-160,y+70+i*12);x.lineTo(sx+s+90,y+20+i*12);x.stroke()}
+  x.save();x.shadowColor='rgba(30,30,20,.22)';x.shadowBlur=50;x.shadowOffsetY=20;x.fillStyle='rgba(230,231,227,.84)';x.fillRect(sx,y,s,s);x.restore();
+  let gr=x.createLinearGradient(sx,y,sx+s,y+s);gr.addColorStop(0,'rgba(250,250,248,.55)');gr.addColorStop(.5,'rgba(224,226,223,.35)');gr.addColorStop(1,'rgba(214,216,212,.45)');x.fillStyle=gr;x.fillRect(sx,y,s,s);
+  x.save();x.beginPath();x.rect(sx,y,s,s);x.clip();
+  const drift=Math.sin(t*.25)*.03;
+  const streak=(t0,w,a)=>{const dxx=s*.55,g=x.createLinearGradient(sx,y,sx,y+s);g.addColorStop(0,`rgba(255,255,255,${a})`);g.addColorStop(.55,`rgba(255,255,255,${a*.55})`);g.addColorStop(1,`rgba(255,255,255,${a*.12})`);
+    x.fillStyle=g;x.beginPath();x.moveTo(sx+s*(t0+drift),y);x.lineTo(sx+s*(t0+w+drift),y);x.lineTo(sx+s*(t0+w+drift)-dxx,y+s);x.lineTo(sx+s*(t0+drift)-dxx,y+s);x.closePath();x.fill()};
+  streak(.34,.17,.7);streak(.545,.035,.8);streak(.62,.012,.65);streak(.95,.1,.4);
+  x.restore();
+  x.strokeStyle='#fff';x.lineWidth=4;x.beginPath();x.moveTo(sx+2,y+s);x.lineTo(sx+2,y+2);x.lineTo(sx+s,y+2);x.stroke();
+  x.save();x.translate(sx,y);x.scale(s/1000,s/1000);
+  x.strokeStyle='#7f7e79';x.lineWidth=1.4;STAFF_C.forEach((_,k)=>{for(let i=-2;i<=2;i++){x.beginPath();x.moveTo(X0,staffY(k,X0)+i*GAP);x.lineTo(X1,staffY(k,X1)+i*GAP);x.stroke()}});
+  x.drawImage(IMG.head,HEAD.x,HEAD.y,HEAD.w,HEAD.h);x.drawImage(IMG.foot,FOOT.x,FOOT.y,FOOT.w,FOOT.h);
+  x.restore();x.restore();
+  function sy(v){return v}
+}
+const toCanvas=(u,v,dx=0)=>[SH.x+dx+u*SH.s/1000,SH.y+v*SH.s/1000];
+function drawSticker(st,cx,cy,scale,rot,alpha=1){
+  x.save();x.globalAlpha*=alpha;x.translate(cx,cy);x.rotate(rot*Math.PI/180);x.scale(scale,scale);
+  for(const p of parts(st.t,st.s)){const path=new Path2D(p.d);if(p.fill){x.fillStyle=p.fill;x.fill(path)}else{x.strokeStyle=p.stroke;x.lineWidth=p.w;x.lineCap='round';x.lineJoin='round';x.stroke(path)}}
+  x.restore()}
+
+// ---------- captions ----------
+function caption(t,a,b,num,en,l1,l2,sub){
+  const pin=eo(seg(t,a,a+.7)),pout=seg(t,b-.5,b);const al=pin*(1-pout);if(al<=0)return;
+  x.save();x.globalAlpha=al;const dy=(1-pin)*36-pout*14;
+  x.fillStyle=C.red;x.font=`600 30px ${COND}`;spaced(`${num}  ${en}`,120,300+dy,7);
+  x.fillStyle=C.ink;x.font=`700 78px ${CJK}`;x.fillText(l1,114,410+dy);if(l2)x.fillText(l2,114,510+dy);
+  if(sub){x.fillStyle=C.muted;x.font=`400 30px ${CJK}`;x.fillText(sub,118,(l2?585:485)+dy)}
+  // hand-cut underline
+  x.strokeStyle=C.red;x.lineWidth=5;x.lineCap='round';x.beginPath();x.moveTo(120,(l2?620:520)+dy);x.lineTo(120+lerp(0,140,eo(seg(t,a+.2,a+1))),(l2?614:514)+dy);x.stroke();
+  x.restore()}
+function spaced(s,X,Y,sp){for(const ch of s){x.fillText(ch,X,Y);X+=x.measureText(ch).width+sp}}
+function brand(t,al){if(al<=0)return;x.save();x.globalAlpha=al*.9;const w=170;x.drawImage(IMG.logo,118,H-70-w*IMG.logo.height/IMG.logo.width,w,w*IMG.logo.height/IMG.logo.width);
+  x.fillStyle=C.muted;x.font=`500 22px ${COND}`;spaced('QINGSHAN MUSICAL SCORE',318,H-82,5);x.restore()}
+
+// ---------- scene 1: the kit's cover, its triangle opens into the film ----------
+const TRI=[[363.5,76],[8,691],[719.5,691]];
+function cover(t,{fadeIn=true,open=0}={}){
+  const iw=IMG.splash.width,ih=IMG.splash.height,dh=760,dw=dh*iw/ih,ix=(W-dw)/2,iy=(H-dh)/2-20,k=dw/iw;
+  const P=TRI.map(([a,b])=>[ix+a*k,iy+b*k]),c=[(P[0][0]+P[1][0]+P[2][0])/3,(P[0][1]+P[1][1]+P[2][1])/3];
+  const inr=(P[2][0]-P[1][0])/(2*Math.sqrt(3)),far=Math.hypot(Math.max(c[0],W-c[0]),Math.max(c[1],H-c[1])),S=1+(far/inr*1.05-1)*eio(open);
+  x.save();
+  const path=new Path2D();path.rect(0,0,W,H);if(open>0){const q=P.map(([a,b])=>[c[0]+(a-c[0])*S,c[1]+(b-c[1])*S]);path.moveTo(...q[0]);path.lineTo(...q[1]);path.lineTo(...q[2]);path.closePath()}
+  x.clip(path,'evenodd');x.fillStyle=C.khaki;x.fillRect(0,0,W,H);if(GRAIN)x.drawImage(GRAIN,0,0);
+  const al=fadeIn?eo(seg(t,.25,1.4)):1;x.globalAlpha=al;x.translate(c[0],c[1]);x.scale(S,S);x.translate(-c[0],-c[1]+(1-al)*24);
+  x.drawImage(IMG.splash,ix,iy,dw,dh);
+  x.font=`500 26px ${COND}`;x.fillStyle='rgba(255,255,255,.88)';const s='RECORD THEM WITH STICKERS';let w=0;for(const ch of s)w+=x.measureText(ch).width+8;spaced(s,(W-w)/2,iy+dh+46,8);
+  x.restore()}
+
+// ---------- scene 2: walk a route, sounds pass by ----------
+const MAPPT=[[293,307],[322,295],[335,280],[347,262],[400,250],[470,237],[532,226],[571,213]].map(([a,b])=>[a/600,b/600]); // route A on the map (fractions)
+const STOPS=[[.12,'竹叶沙沙'],[.38,'溪水叮咚'],[.62,'田边虫鸣'],[.88,'脚步踩过泥土']];
+function routeAt(p){const L=[];let tot=0;for(let i=1;i<MAPPT.length;i++){const d=Math.hypot(MAPPT[i][0]-MAPPT[i-1][0],MAPPT[i][1]-MAPPT[i-1][1]);L.push(d);tot+=d}
+  let r=p*tot;for(let i=0;i<L.length;i++){if(r<=L[i]){const f=r/L[i];return[lerp(MAPPT[i][0],MAPPT[i+1][0],f),lerp(MAPPT[i][1],MAPPT[i+1][1],f)]}r-=L[i]}return MAPPT[MAPPT.length-1]}
+const S2=[T(2),T(5)],WALK=[T(2)+1.2,T(5)-.7];
+function mapScene(t){
+  const a=S2[0],b=S2[1];if(t<a-.1||t>b+1.2)return;
+  const out=eio(seg(t,b-.3,b+.9));
+  const z=lerp(1.25,1.45,eio(seg(t,a,b))),cx=lerp(.5,.66,eio(seg(t,a,b))),cy=.48,M=1180*z,mx=1335-cx*M,my=540-cy*M;
+  const CX=830-out*420,CY=70,CW=1010,CHh=940;
+  x.save();x.globalAlpha=1-out;x.translate(CX+CW/2,CY+CHh/2);x.rotate(-.012);x.translate(-(CX+CW/2),-(CY+CHh/2));
+  x.save();x.shadowColor='rgba(40,40,20,.2)';x.shadowBlur=46;x.shadowOffsetY=16;x.fillStyle='#fff';x.fillRect(CX,CY,CW,CHh);x.restore();
+  x.beginPath();x.rect(CX,CY,CW,CHh);x.clip();
+  x.drawImage(IMG.map,mx-out*420,my,M,M);
+  const P=p=>{const q=routeAt(p);return[mx-out*420+q[0]*M,my+q[1]*M]};
+  const pw=eio(seg(t,WALK[0],WALK[1]));
+  // walked path, drawn over the map's dashed route
+  x.strokeStyle=C.red;x.lineWidth=7;x.lineCap='round';x.lineJoin='round';x.beginPath();for(let i=0;i<=60;i++){const pp=pw*i/60,[u,v]=P(pp);i?x.lineTo(u,v):x.moveTo(u,v)}x.stroke();
+  for(const[sp,label]of STOPS){const ts=lerp(WALK[0],WALK[1],sp);if(t<ts-.05)continue;const [u,v]=P(sp),age=t-ts;
+    for(let r=0;r<3;r++){const ag=age-r*.28;if(ag<0||ag>1.6)continue;x.strokeStyle=`rgba(237,22,60,${(1-ag/1.6)*.9})`;x.lineWidth=4;x.beginPath();x.arc(u,v,20+ag*130,0,7);x.stroke()}
+    const k=STOPS.findIndex(q=>q[1]===label),up=k%2===0,la=eo(seg(age,0,.4))*(1-.45*seg(age,1.8,2.6));x.save();x.globalAlpha*=la;x.fillStyle=C.ink;x.font=`700 40px ${CJK}`;const tw=x.measureText(label).width;
+    const lx=Math.min(u-tw/2,CX+CW-tw-40),ly=up?v-58-(1-la)*16:v+92+(1-la)*16;x.fillStyle='rgba(253,252,248,.92)';x.fillRect(lx-16,ly-44,tw+32,60);x.fillStyle=C.ink;x.fillText(label,lx,ly);x.restore()}
+  const [u,v]=P(pw);x.fillStyle=C.red;x.beginPath();x.arc(u,v,16,0,7);x.fill();x.strokeStyle='#fff';x.lineWidth=5;x.stroke();
+  x.restore()}
+
+// ---------- scene 3: one sticker for each kind of sound ----------
+const S3=[T(5),T(8)];
+const KINDS=[['circle','L','圆点','钢琴'],['wave','L','波浪','竖琴'],['dash','L','虚线','贝斯'],['scallop','L','半圆','手鼓'],['spiral','L','螺旋','钟声'],['tri','L','三角','木琴']];
+const LEN0={circle:78,wave:168,dash:150,scallop:146,spiral:60,tri:97};
+const kindAt=i=>S3[0]+.35+i*BAR/2;
+function chooseScene(t){
+  const a=S3[0],b=S3[1];if(t<a||t>b+.8)return;const out=eio(seg(t,b-.2,b+.6));
+  KINDS.forEach(([tt,s,name,inst],i)=>{const t0=kindAt(i);if(t<t0)return;const p=seg(t,t0,t0+.55),col=i%3,row=Math.floor(i/3);
+    const cx=1080+col*330+out*-120,cy=300+row*450;
+    x.save();x.globalAlpha=(1-out);
+    x.fillStyle='rgba(253,252,248,.9)';x.save();x.shadowColor='rgba(40,40,20,.12)';x.shadowBlur=30;x.shadowOffsetY=12;const cw=290,chh=400;x.translate(cx,cy);x.rotate(((i*37)%7-3)*.006);x.fillRect(-cw/2,-chh/2+lerp(40,0,eo(p)),cw,chh);x.restore();
+    const pulse=Math.exp(-Math.max(0,t-t0-.05)*5)*.18;
+    const fit=Math.min(2.6,220/(LEN0[tt]||100));drawSticker({t:tt,s},cx,cy-50+lerp(40,0,eo(p)),fit*back(clamp(p))*(1+pulse),tt==='dash'?-20:0,clamp(p*2));
+    x.globalAlpha=(1-out)*eo(seg(t,t0+.2,t0+.7));x.fillStyle=C.ink;x.font=`700 44px ${CJK}`;x.textAlign='center';x.fillText(name,cx,cy+110);
+    x.fillStyle=C.red;x.font=`500 32px ${CJK}`;x.fillText(inst,cx,cy+160);x.textAlign='left';x.restore()})}
+
+// ---------- scene 4-6: stick, scan, play ----------
+const STK=[...SAMPLE_STICKERS].sort((p,q)=>readingOrder(p)-readingOrder(q));
+const S4=[T(8),T(10)],landAt=i=>S4[0]+.7+i*((S4[1]-S4[0]-1.2)/STK.length);
+const S5=[T(10),T(11)],S6=[T(11),T(17)],S7=[T(17),T(19)];
+let PLAN=null;
+function sheetScenes(t){
+  if(t<S4[0]-.7||t>S7[0]+1.2)return;
+  const sin=eo(seg(t,S4[0]-.7,S4[0]+.3)),sout=eio(seg(t,S7[0]-.25,S7[0]+.55)),dx=(1-sin)*700+sout*900;
+  sheet(t,{alpha:sin*(1-sout),dx});
+  x.save();x.globalAlpha=sin*(1-sout);
+  // playhead (scene 6)
+  const sd=step(),pp=(t-S6[0])/sd;
+  if(pp>=0&&pp<=96){const row=Math.min(5,Math.floor(pp/16)),u=X0+(X1-X0)*((pp-row*16)/16);
+    const[a1,b1]=toCanvas(X0,staffY(row,X0)-46,dx),[a2]=toCanvas(X1,0,dx);x.fillStyle='rgba(51,181,64,.10)';x.fillRect(a1,b1,a2-a1,92*SH.s/1000);
+    const[ux,uy]=toCanvas(u,staffY(row,u),dx);x.strokeStyle=C.green;x.lineWidth=5;x.beginPath();x.moveTo(ux,uy-56);x.lineTo(ux,uy+56);x.stroke()}
+  STK.forEach((st,i)=>{const tl=landAt(i);if(t<tl-.55)return;const f=eo(seg(t,tl-.55,tl)),[tx,ty]=toCanvas(st.x,st.y,dx);
+    const fx=lerp(160+((i*131)%420),tx,f),fy=lerp(H+120,ty,f)-Math.sin(f*Math.PI)*160,rot=lerp(st.r+60*((i%2)?1:-1),st.r,f);
+    let sc=SH.s/1000*(1+.35*(1-f));if(t>tl)sc*=1+Math.exp(-(t-tl)*9)*.12;
+    // pulse when its notes sound
+    if(PLAN){for(const e of PLAN.byId.get(st.id)||[]){const d=t-e;if(d>=0&&d<.4)sc*=1+.28*Math.exp(-d*9)}}
+    drawSticker(st,fx,fy,sc,rot)});
+  x.restore();
+  // scan (scene 5): phone frame + sweeping line + flash
+  const ps=eo(seg(t,S5[0]-.2,S5[0]+.5)),pq=eio(seg(t,S6[0]+.2,S6[0]+.9));if(ps>0&&pq<1){
+    const m=60,fx=SH.x-m+dx,fy=SH.y-m-100,fw=SH.s+2*m,fh=SH.s+2*m+200,off=(1-ps)*1100+pq*1100;
+    x.save();x.globalAlpha=ps*(1-pq);
+    const found=t>S5[0]+1.6;const L=90,cs=[[SH.x+dx,SH.y,1,1],[SH.x+dx+SH.s,SH.y,-1,1],[SH.x+dx,SH.y+SH.s,1,-1],[SH.x+dx+SH.s,SH.y+SH.s,-1,-1]];
+    x.strokeStyle=found?C.green:'#fff';x.lineWidth=10;x.lineCap='round';for(const[a,b,sx,sy]of cs){x.beginPath();x.moveTo(a,b+sy*L);x.lineTo(a,b);x.lineTo(a+sx*L,b);x.stroke()}
+    const sw=seg(t,S5[0]+.4,S5[0]+2.2);if(sw>0&&sw<1){const yy=SH.y+SH.s*sw;const g=x.createLinearGradient(0,yy-120,0,yy);g.addColorStop(0,'rgba(51,181,64,0)');g.addColorStop(1,'rgba(51,181,64,.28)');x.fillStyle=g;x.fillRect(SH.x+dx,yy-120,SH.s,120);x.fillStyle=C.green;x.fillRect(SH.x+dx,yy-3,SH.s,6)}
+    x.restore()}
+  const fl=t-(S6[0]-.15);if(fl>0&&fl<.45){x.fillStyle=`rgba(255,255,255,${.85*(1-fl/.45)})`;x.fillRect(0,0,W,H)}
+  // result chip (after scan)
+  const rc=eo(seg(t,S6[0]-.05,S6[0]+.5))*(1-seg(t,S6[0]+3.2,S6[0]+3.8));if(rc>0){x.save();x.globalAlpha=rc;x.fillStyle=C.ink;roundRect(SH.x+dx+SH.s/2-210,SH.y+SH.s-120+(1-rc)*20,420,84,42);x.fill();
+    x.fillStyle='#fff';x.font=`700 38px ${CJK}`;x.textAlign='center';x.fillText('读到了 24 枚贴纸',SH.x+dx+SH.s/2,SH.y+SH.s-64+(1-rc)*20);x.textAlign='left';x.restore()}
+}
+function roundRect(a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
+function player(t){const a=S6[0],b=S6[1];const al=eo(seg(t,a+.3,a+1))*(1-seg(t,b-.3,b+.2));if(al<=0)return;
+  x.save();x.globalAlpha=al;const cx=180,cy=760;x.translate(cx,cy);x.rotate((t-a)*1.6);x.fillStyle=C.red;x.beginPath();x.arc(0,0,62,0,7);x.fill();
+  x.strokeStyle='rgba(255,255,255,.3)';x.lineWidth=2;for(const r of[46,34]){x.beginPath();x.arc(0,0,r,0,7);x.stroke()}x.fillStyle='#fff';x.beginPath();x.arc(40,-26,5,0,7);x.fill();x.restore();
+  x.save();x.globalAlpha=al;const p=clamp((t-a)/(b-a));x.fillStyle='rgba(29,29,27,.15)';x.fillRect(280,758,440,6);x.fillStyle=C.green;x.fillRect(280,758,440*p,6);
+  x.fillStyle=C.ink;x.font=`600 30px ${CJK}`;x.fillText(`第 ${Math.min(6,Math.floor(p*6)+1)} 行`,280,730);x.fillStyle=C.muted;x.font=`500 26px ${COND}`;x.fillText(`0:${String(Math.floor(p*17)).padStart(2,'0')} / 0:17`,620,730);x.restore()}
+
+// ---------- scene 7: end card ----------
+function endCard(t){const a=S7[0];if(t<a)return;
+  const p=eo(seg(t,a+.45,a+1.4)),q=eo(seg(t,a+.8,a+1.7));
+  x.save();x.globalAlpha=p;
+  x.fillStyle=C.red;x.beginPath();x.arc(1600,250,lerp(0,190,eo(seg(t,a,a+1))),0,7);x.fill();
+  x.fillStyle=C.green;x.beginPath();x.moveTo(-40,H);x.lineTo(-40+lerp(0,230,eo(seg(t,a+.2,a+1.1))),H-210);x.lineTo(-40+lerp(0,460,eo(seg(t,a+.2,a+1.1))),H);x.closePath();x.fill();
+  x.strokeStyle=C.green;x.lineWidth=2.5;for(let i=0;i<8;i++){const l=eo(seg(t,a+.3+i*.05,a+1.3+i*.05));x.beginPath();x.moveTo(1380,960+i*13);x.lineTo(1380+600*l,960+i*13-90*l);x.stroke()}
+  const hw=1100,hh=hw*IMG.head.height/IMG.head.width;x.drawImage(IMG.head,(W-hw)/2,300+(1-p)*30,hw,hh);
+  x.globalAlpha=q;x.fillStyle=C.ink;x.font=`500 44px ${CJK}`;x.textAlign='center';x.fillText('一份没有标准答案的青山村声音导览',W/2,700+(1-q)*20);
+  x.fillStyle=C.muted;x.font=`500 28px ${COND}`;let s='A SOUND GUIDE TO QINGSHAN VILLAGE',w=0;for(const ch of s)w+=x.measureText(ch).width+8;x.textAlign='left';spaced(s,(W-w)/2,760+(1-q)*20,8);
+  const r=eo(seg(t,a+1.4,a+2.2));x.globalAlpha=r;x.fillStyle=C.red;x.font=`700 36px ${CJK}`;x.textAlign='center';x.fillText('走一走，听一听，贴下你的青山',W/2,860);x.textAlign='left';
+  x.restore()}
+
+// ================= frame =================
+function draw(t){
+  x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.fillStyle=C.paper;x.fillRect(0,0,W,H);
+  mapScene(t);chooseScene(t);sheetScenes(t);player(t);
+  caption(t,S2[0]+.3,S2[1],'01','LISTEN','沿着路线走','听见经过你的声音','风声、鸟鸣、溪流、脚步，都在路上');
+  caption(t,S3[0]+.1,S3[1],'02','CHOOSE','每一种声音','选一枚贴纸','六种形状，对应六种乐器');
+  caption(t,S4[0]+.1,S4[1],'03','STICK','贴在乐谱上','越高，音越高','从第一行贴到最后一行');
+  caption(t,S5[0]+.05,S5[1]+.2,'04','SCAN','扫一扫','读出你的乐谱','手机对准，自动识别');
+  caption(t,S6[0]+.3,S6[1]-.2,'05','PLAY','它变成了','一首只属于你的歌','一行一行，奏出你走过的青山');
+  brand(t,seg(t,S2[0]+.6,S2[0]+1.4)*(1-seg(t,S7[0]-.2,S7[0]+.4)));
+  endCard(t);
+  if(GRAIN)x.drawImage(GRAIN,0,0);
+  // the cover opens at the start, and returns at the very end so the loop is seamless
+  if(t<T(2)+.05)cover(t,{open:seg(t,T(2)-1.5,T(2))});
+  const back=seg(t,DUR-1.1,DUR);if(back>0){x.save();x.globalAlpha=eio(back);x.fillStyle=C.khaki;x.fillRect(0,0,W,H);if(GRAIN)x.drawImage(GRAIN,0,0);x.restore()}
+}
+
+// ================= soundtrack: the same instruments as the website, rendered offline =================
+function soundEvents(){
+  const ev=[],sd=step();const add=(inst,at,o)=>ev.push({inst,at,...o});
+  // cover: a bell and a slow rising harp
+  add('bell',.5,{m:midiOf(4,12),v:.55,dur:3});
+  [0,1,2,3,4,5,6,7].forEach((k,i)=>add('harp',1.6+i*.22,{m:midiOf(k-3,0),v:.35}));
+  // the triangle opens: a quick harp sweep
+  for(let i=0;i<10;i++)add('harp',T(2)-1.3+i*.09,{m:midiOf(i-2,0),v:.3});
+  // route: each sound we pass rings once
+  STOPS.forEach(([sp],i)=>{const ts=lerp(WALK[0],WALK[1],sp);add('marimba',ts,{m:midiOf([2,4,1,5][i],0),v:.55});add('harp',ts+.18,{m:midiOf([4,6,3,7][i],0),v:.35})});
+  // choose: each sticker plays its own instrument
+  KINDS.forEach(([tt,s],i)=>{const t0=kindAt(i)+.05,st={id:'k'+i,t:tt,s,x:470,y:staffY(2,470)-2*GAP,r:tt==='dash'?-20:0};
+    const notes=stickerNotes(st,2),h0=Math.min(...notes.map(n=>n.s));notes.forEach(n=>add(n.inst,t0+(n.s-h0)*sd,n))});
+  // stick: each landing taps a soft note at the height it lands
+  STK.forEach((st,i)=>{const k=kAt(st.x,st.y,nearestStaff(st.x,st.y));add('marimba',landAt(i),{m:midiOf(Math.round(k/2),0),v:.22})});
+  // scan: a rising shimmer, then the flash
+  for(let i=0;i<14;i++)add('harp',S5[0]+.4+i*.13,{m:midiOf(i-4,0),v:.22});
+  add('bell',S6[0]-.15,{m:midiOf(6,12),v:.4,dur:2});
+  // play: the real score, row by row
+  STICKERS=SAMPLE_STICKERS;const plan=buildEvents(),byId=new Map();
+  for(const e of plan.ev){const at=S6[0]+e.at*sd+(e.dt||0);ev.push({...e,at});if(e.id)(byId.get(e.id)||byId.set(e.id,[]).get(e.id)).push(at)}
+  // end: one warm chord
+  [0,2,4,5,7].forEach((k,i)=>add('piano',S7[0]+.1+i*.06,{m:midiOf(k-5,0),v:.5,dur:8}));
+  add('bass',S7[0]+.1,{m:36,v:.7,dur:10});
+  PLAN={byId};return ev}
+// a bell voice for the cover: the spiral's sound
+function bellNote(e,t){const n=stickerNotes({id:'b',t:'spiral',s:'L',x:500,y:staffY(2,500)},2);for(const k of n){if(k.inst&&Q[k.inst])Q[k.inst]({...k,m:e.m,v:e.v*(k.v||1)},t+(k.s-n[0].s)*step()+(k.dt||0));break}}
+
+async function renderAudio(){
+  const SR=44100;const off=new OfflineAudioContext(2,Math.ceil(SR*(DUR+.01)),SR);
+  window.AudioContext=function(){return off};audio();
+  await loadSamples();
+  const ev=soundEvents();
+  // a soft wind bed glues the scenes together, ducking under the song
+  opts.amb='on';startWind(0);const wg=wind.g.gain;wg.cancelScheduledValues(0);wg.setValueAtTime(0,0);wg.linearRampToValueAtTime(.11,2);wg.setValueAtTime(.11,S6[0]-.5);wg.linearRampToValueAtTime(.035,S6[0]+.5);wg.setValueAtTime(.035,S7[0]);wg.linearRampToValueAtTime(.1,S7[0]+2);wg.linearRampToValueAtTime(0,DUR-.1);
+  for(const e of ev)if(e.at<S6[0]-.2)e.v*=1.6;
+  for(const e of ev){if(e.at>=DUR-.05)continue;const f=Q[e.inst];if(f)try{f(e,e.at)}catch(err){console.log('skip',e.inst,err.message)}}
+  const buf=await off.startRendering();
+  // 16-bit WAV, with a short fade at both ends so the loop doesn't click
+  const n=buf.length,ch=[buf.getChannelData(0),buf.getChannelData(1)],out=new DataView(new ArrayBuffer(44+n*4));
+  const w=(o,s)=>{for(let i=0;i<s.length;i++)out.setUint8(o+i,s.charCodeAt(i))};w(0,'RIFF');out.setUint32(4,36+n*4,true);w(8,'WAVE');w(12,'fmt ');out.setUint32(16,16,true);out.setUint16(20,1,true);out.setUint16(22,2,true);out.setUint32(24,SR,true);out.setUint32(28,SR*4,true);out.setUint16(32,4,true);out.setUint16(34,16,true);w(36,'data');out.setUint32(40,n*4,true);
+  let peak=0;for(let i=0;i<n;i++)peak=Math.max(peak,Math.abs(ch[0][i]),Math.abs(ch[1][i]));const g=peak>.95?.95/peak:1;
+  for(let i=0;i<n;i++){const fade=Math.min(1,i/(SR*.02),(n-i)/(SR*.6));for(let c=0;c<2;c++)out.setInt16(44+i*4+c*2,Math.max(-1,Math.min(1,ch[c][i]*g*fade))*32767,true)}
+  const bytes=new Uint8Array(out.buffer);let s='';for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return{b64:btoa(s),peak}}
+
+window.ready=(async()=>{await Promise.all([loadI('splash','assets/splash.png'),loadI('map','assets/map.jpg'),loadI('head','assets/sheet-head.png'),loadI('foot','assets/sheet-foot.png'),loadI('logo','assets/logo.png')]);
+  await document.fonts.load(`600 30px "Barlow Condensed"`);await document.fonts.load(`500 30px "Barlow Condensed"`);await document.fonts.load(`700 40px ${CJK}`);
+  GRAIN=document.createElement('canvas');GRAIN.width=W;GRAIN.height=H;const g=GRAIN.getContext('2d');g.fillStyle=g.createPattern(grain,'repeat');g.fillRect(0,0,W,H);
+  STICKERS=SAMPLE_STICKERS;soundEvents(); // fills PLAN for the pulses
+  return DUR})();
+window.frame=t=>{draw(t);return cv.toDataURL('image/jpeg',.93)};
+// live preview when opened by hand
+if(!navigator.webdriver)window.ready.then(()=>{const t0=performance.now();(function loop(){draw(((performance.now()-t0)/1000)%DUR);requestAnimationFrame(loop)})()});
+</script></body></html>
