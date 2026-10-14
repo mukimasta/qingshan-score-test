@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<script>window.SAMPLE_BASE='../samples/'</script>
 <title>青山乐谱 声音试验台</title>
 </head><body>
 
@@ -89,13 +90,13 @@ h2{font-size:18px;margin:0 0 4px}
       <p>开：从头到尾垫一层很轻的鼓点，空白的地方也有东西在走。</p></div>
     <div class="dim"><div><span class="n">4</span><b>音色</b></div>
       <div class="seg" data-k="style"><button data-v="qs">青山</button><button data-v="el">电子</button></div>
-      <p>青山：竹木琴、柔音钢琴、竖琴、暖贝斯、手鼓木鱼、颂钵风铃、竹笛。电子：上一版的合成器音色，留着对比。</p></div>
+      <p>青山：钢琴、竖琴、贝斯、太鼓和通鼓、颂钵风铃、拨弦，大部分换成了真实乐器的采样。电子：最早的合成器音色，留着对比。</p></div>
     <div class="dim"><div><span class="n">5</span><b>风声底</b></div>
       <div class="seg" data-k="amb"><button data-v="off">关</button><button data-v="on">开</button></div>
       <p>开：整首歌下面垫一层很轻的风过竹林的声音。</p></div>
-    <div class="dim"><div><span class="n">6</span><b>橙色贝斯</b></div>
-      <div class="seg" data-k="bass"><button data-v="synth">暖合成</button><button data-v="cello">大提琴</button><button data-v="keys">电钢琴</button></div>
-      <p>三种铺底贝斯换着听。都只落在最稳的两个音上（贴得高是 G，贴得低是 C），比上一版高了一个八度，手机外放也听得到。</p></div>
+    <div class="dim"><div><span class="n">6</span><b>蓝色三角</b></div>
+      <div class="seg" data-k="blue"><button data-v="pizz">弦乐拨奏</button><button data-v="xylo">木琴</button></div>
+      <p>两种又尖又跳、但不刺耳的声音，换着听。</p></div>
     <div class="dim"><div><b>速度</b></div>
       <div class="tempo"><input type="range" id="bpm" min="60" max="120" step="2" aria-label="速度"><output id="bpmOut"></output></div>
       <p id="lenNote"></p></div>
@@ -103,7 +104,7 @@ h2{font-size:18px;margin:0 0 4px}
 
   <h2>七种声音</h2>
   <div id="insts"></div>
-  <p class="foot">音高：看贴纸中心落在这一行谱的哪条线或哪个间，对应五声音阶（宫商角徵羽），贴到谱外就继续往上或往下。<br>跨了两行的贴纸，两行都会响，第二次轻一点，像回声（只在“一行一行”时有）。<br>示例乐谱：模拟一个人沿路线 2 从访客中心走到龙坞里水库，一行是一段路（访客中心、村道、竹林、溪边、龙坞里、水库），按听到的先后从左往右贴。识别还没接上。</p>
+  <p class="foot">音高：看贴纸中心落在这一行谱的哪条线或哪个间，对应五声音阶（宫商角徵羽），贴到谱外就继续往上或往下。<br>跨了两行的贴纸，两行都会响，第二次轻一点，像回声（只在“一行一行”时有）。<br>采样来源：钢琴、竖琴、贝斯、木琴来自 tonejs-instruments；弦乐拨奏、太鼓、通鼓、木块来自 FluidR3 GM 音色库，均为 CC BY 3.0 授权。<br>示例乐谱：模拟一个人沿路线 2 从访客中心走到龙坞里水库，一行是一段路（访客中心、村道、竹林、溪边、龙坞里、水库），按听到的先后从左往右贴。识别还没接上。</p>
 </div>
 
 <script>
@@ -196,14 +197,14 @@ function stickerNotes(st,staff){
       if(big){[0,2,4].forEach((d,i)=>add({inst:'piano',s:s0,dt:i*.012,m:midiOf(k0+d,-12),v:.75,dur:2.6,g:'circleL'}))}
       else{add({inst:'marimba',s:s0,m:midiOf(k0,12),v:.7,g:'circleS'});if(hash(st.id)%2)add({inst:'marimba',s:s0+1,m:midiOf(k0+1,12),v:.55,g:'circleS'})}
       break;
-    case 'wave':{ // arpeggio along the sticker, contour rides on its slope
-      const n=big?8:5,span=sB-sA,gap=span<1?.25:Math.max(span/(n-1),.5),shape=[0,2,4,2];
-      for(let i=0;i<n;i++){const base=kA+(kB-kA)*i/(n-1);add({inst:'harp',s:sA+i*gap,m:midiOf(Math.round(base)+shape[i%4],big?-12:0),v:big?.8:.5,g:'wave'})}
+    case 'wave':{ // harp run in one direction: rising/falling with the slope, flat goes up; steeper = wider steps
+      const n=big?8:5,dk=kB-kA,flat=Math.abs(dk)<2,dir=flat?1:Math.sign(dk),stp=flat?1:Math.max(1,Math.min(3,Math.round(Math.abs(dk)/(n-1))));
+      const k1=flat?k0-2:kA,span=sB-sA,gap=span<1?.25:Math.max(span/(n-1),.5);
+      for(let i=0;i<n;i++)add({inst:'harp',s:sA+i*gap,m:midiOf(k1+dir*stp*i,big?-12:0),v:(big?.8:.55)*(1-i*.03),g:'wave'});
       break}
-    case 'dash':{ // warm bass bed: held notes across the sticker; a slope steps the bass to the other end's pitch
-      const span=Math.max(0,sB-sA),segs=(kA===kB||span<4)?1:Math.min(3,Math.round(span/4));
-      const root=k=>(k>=0?43:36)+12; // high → G, low → C
-      for(let i=0;i<segs;i++)add({inst:'bass',s:sA+span*i/segs,m:root(Math.round(kA+(kB-kA)*i/Math.max(1,segs-1))),v:big?.8:.55,dur:Math.max(span/segs,4)+1,g:'dash'});
+    case 'dash':{ // plain bass: a root note every half bar along the sticker; high end → G, low end → C
+      const span=Math.max(0,sB-sA),hits=Math.max(1,Math.floor(span/8)+1);
+      for(let i=0;i<hits;i++){const s=sA+i*8,k=Math.round(kA+(kB-kA)*(hits>1?i/(hits-1):0));add({inst:'bass',s,m:k>=0?43:36,v:big?.85:.6,dur:Math.min(8,Math.max(4,span-i*8+2)),g:'dash'})}
       break}
     case 'scallop':{ // drum phrase; height picks the kit, a steep slope turns it into a tom fill
       const len=big?8:4,v=big?.9:.6,steep=Math.abs(kB-kA)>=3;
@@ -229,7 +230,7 @@ function touched(st,primary){
   const set=new Set();for(const[x,y]of pts)for(let s=0;s<6;s++)if(s!==primary&&Math.abs(y-staffY(s,x))<=GAP*2+4)set.add(s);
   return[...set];
 }
-const opts={scan:'row',quant:'on',beat:'on',bpm:84,style:'qs',amb:'off',bass:'synth'};
+const opts={scan:'row',quant:'on',beat:'on',bpm:84,style:'qs',amb:'off',bass:'synth',blue:'pizz'};
 const PASS_ALL=64; // "all rows" sweeps the page over 4 bars
 function buildEvents(){
   const ev=[];
@@ -245,7 +246,7 @@ function buildEvents(){
   }
   const bars=opts.scan==='row'?6:PASS_ALL/16;
   if(opts.beat==='on'&&opts.style==='qs')for(let b=0;b<bars;b++){const o=b*16;
-    [[0,'bkick',.55],[10,'bkick',.35],[6,'brim',.22],[14,'brim',.18]].forEach(([s,i,v])=>ev.push({inst:i,at:o+s,v,g:'beat'}));
+    [[0,'bkick',.5],[10,'bkick',.3]].forEach(([s,i,v])=>ev.push({inst:i,at:o+s,v,g:'beat'}));
     for(let s=0;s<16;s+=2)ev.push({inst:'bhat',at:o+s+(s%4?.08:0),v:s%4?.14:.22,g:'beat'})}
   else if(opts.beat==='on')for(let b=0;b<bars;b++){const o=b*16;
     [[0,'bkick',.55],[6,'bkick',.35],[8,'bkick',.5],[4,'brim',.35],[12,'brim',.35]].forEach(([s,i,v])=>ev.push({inst:i,at:o+s,v,g:'beat'}));
@@ -341,6 +342,29 @@ const Q={
   bkick(e,t){Q.kick(e,t,.6)},brim(e,t){Q.tom({...e,m:84},t)},bhat(e,t){Q.hat(e,t,1)}
 };
 const VOICE=()=>opts.style==='qs'?Q:V;
+// ---- real-instrument samples (CC BY 3.0, see the credits at the bottom) ----
+const SBASE=window.SAMPLE_BASE||'samples/';let MAN=null,loading=null;const BUF={};
+function loadSamples(){if(loading)return loading;loading=(async()=>{MAN=await(await fetch(SBASE+'manifest.json')).json();const jobs=[];
+  for(const k in MAN)for(const m of MAN[k])jobs.push(fetch(`${SBASE}${k}/${m}.mp3`).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,no)=>ctx.decodeAudioData(b,ok,no))).then(buf=>{(BUF[k]||(BUF[k]={}))[m]=buf}));
+  await Promise.all(jobs)})();return loading}
+function samp(k,m,t,{v=1,dest,dur=null,rel=.25}={}){if(!MAN||!MAN[k])return;let best=MAN[k][0];for(const x of MAN[k])if(Math.abs(x-m)<Math.abs(best-m))best=x;const b=BUF[k]&&BUF[k][best];if(!b)return;
+  const s=ctx.createBufferSource();s.buffer=b;const rate=Math.pow(2,(m-best)/12);s.playbackRate.value=rate;const g=ctx.createGain();g.gain.setValueAtTime(v,t);
+  let end=t+b.duration/rate;if(dur!=null&&t+dur<end){g.gain.setValueAtTime(v,t+dur);g.gain.exponentialRampToValueAtTime(1e-4,t+dur+rel);end=t+dur+rel}
+  s.connect(g);g.connect(dest);s.start(t);s.stop(end+.05)}
+const lowpass=(f,dest)=>{const l=ctx.createBiquadFilter();l.type='lowpass';l.frequency.value=f;l.connect(dest);return l};
+Object.assign(Q,{
+  marimba(e,t){samp('piano',e.m,t,{v:1,dest:lowpass(5200,bus(t,e.v*.85,{wet:.3}))})},           // small dot: a clear piano note
+  piano(e,t){samp('piano',e.m,t,{v:1,dur:e.dur,rel:.8,dest:lowpass(4200,bus(t,e.v*.75,{wet:.4}))})}, // big dot: rolled chord
+  harp(e,t){samp('harp',e.m,t,{v:1,dest:bus(t,e.v*.95,{wet:.4})})},
+  bass(e,t){samp('bass',e.m,t,{v:1,dur:e.dur*step(),rel:.2,dest:lowpass(2400,bus(t,e.v*1.1,{wet:.08}))})},
+  kick(e,t){samp('taiko',e.v>.7?36:43,t,{v:1,dest:bus(t,e.v*1.05,{wet:.25})})},
+  snare(e,t){samp('taiko',e.v>.7?48:55,t,{v:1,dest:bus(t,e.v*.8,{wet:.25})})},
+  hat(e,t){samp('block',79,t,{v:1,dest:bus(t,e.v*.6,{wet:.2})})},
+  tom(e,t){samp('tom',Math.max(48,Math.min(72,e.m)),t,{v:1,dest:bus(t,e.v*.9,{wet:.25})})},
+  chip(e,t){if(opts.blue==='xylo')samp('xylo',e.m,t,{v:1,dest:bus(t,e.v*.7,{wet:.3})});else samp('pizz',e.m,t,{v:1,dest:bus(t,e.v*1.0,{wet:.3})})},
+  bkick(e,t){const out=bus(t,e.v*.5,{wet:.12}),g=ctx.createGain();env(g,t,1,.003,.4);g.connect(out);const o=osc('sine',90,t,t+.5,g);o.frequency.setValueAtTime(90,t);o.frequency.exponentialRampToValueAtTime(58,t+.09)},
+  bhat(e,t){const out=bus(t,e.v*.3,{wet:.1});noiseHit(t,{type:'highpass',f:3500,peak:1,a:.012,dec:.07,dest:out})}
+});
 let wind=null;
 function startWind(t){if(wind||opts.amb!=='on')return;const L=ctx.sampleRate*4,b=ctx.createBuffer(1,L,ctx.sampleRate),d=b.getChannelData(0);let p=0;for(let i=0;i<L;i++){p=.97*p+.03*(Math.random()*2-1);d[i]=p*6}
   const n=ctx.createBufferSource();n.buffer=b;n.loop=true;const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=520;bp.Q.value=.7;const g=ctx.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.09,t+1.5);
@@ -355,7 +379,7 @@ $('ico').innerHTML=PLAY;
 const muted=new Set();let playing=false,start=0,plan=null,idx=0,timer=0,raf=0;
 function fire(e,at){if(e.g&&muted.has(e.g))return;VOICE()[e.inst](e,at);if(e.id)setTimeout(()=>pulse(e.id),Math.max(0,(at-ctx.currentTime)*1000))}
 function pulse(id){const n=nodes.get(id);if(n&&n.animate)n.animate([{transform:'scale(1)'},{transform:'scale(1.25)'},{transform:'scale(1)'}],{duration:260,easing:'ease-out'})}
-function play(){audio();plan=buildEvents();idx=0;start=ctx.currentTime+.12;startWind(start);playing=true;$('play').classList.add('on');$('ico').innerHTML=STOP;
+async function play(){audio();if(opts.style==='qs'&&!MAN){$('where').innerHTML='<b>正在加载乐器…</b>';try{await loadSamples()}catch(err){$('where').innerHTML='<b>乐器没加载出来，刷新试试</b>';return}}plan=buildEvents();idx=0;start=ctx.currentTime+.12;startWind(start);playing=true;$('play').classList.add('on');$('ico').innerHTML=STOP;
   clearInterval(timer);timer=setInterval(()=>{const until=ctx.currentTime+.2,sd=step();while(idx<plan.ev.length&&start+plan.ev[idx].at*sd+(plan.ev[idx].dt||0)<until){const e=plan.ev[idx++];fire(e,start+e.at*sd+(e.dt||0))}},40);
   cancelAnimationFrame(raf);frame()}
 function stop(){stopWind();playing=false;clearInterval(timer);cancelAnimationFrame(raf);ph.setAttribute('opacity',0);$('play').classList.remove('on');$('ico').innerHTML=PLAY;$('where').innerHTML='<b>准备好了</b>'}
@@ -371,7 +395,7 @@ function frame(){if(!playing)return;const sd=step(),p=(ctx.currentTime-start)/sd
 $('play').onclick=()=>playing?stop():play();
 
 // tap a sticker → hear it alone
-svg.addEventListener('click',e=>{const g=e.target.closest('.sticker');if(!g)return;audio();const st=STICKERS.find(s=>s.id===g.dataset.id),notes=stickerNotes(st,nearestStaff(st.x,st.y)),s0=Math.min(...notes.map(n=>n.s)),now=ctx.currentTime+.05;
+svg.addEventListener('click',async e=>{const g=e.target.closest('.sticker');if(!g)return;audio();await loadSamples();const st=STICKERS.find(s=>s.id===g.dataset.id),notes=stickerNotes(st,nearestStaff(st.x,st.y)),s0=Math.min(...notes.map(n=>n.s)),now=ctx.currentTime+.05;
   for(const n of notes)fire({...n,g:null},now+(n.s-s0)*step()+(n.dt||0))});
 
 // switches
@@ -384,11 +408,11 @@ $('bpm').oninput=e=>{opts.bpm=+e.target.value;setDelay();syncUI()};$('bpm').onch
 // instrument list with solo preview and mute
 const DEMO={circleS:{t:'circle',s:'S',x:300,y:0,r:0},circleL:{t:'circle',s:'L',x:300,y:0,r:0},wave:{t:'wave',s:'L',x:300,y:30,r:-20},dash:{t:'dash',s:'L',x:300,y:10,r:-12},scallop:{t:'scallop',s:'L',x:300,y:0,r:0},spiral:{t:'spiral',s:'L',x:300,y:0,r:0},tri:{t:'tri',s:'L',x:300,y:0,r:0}};
 const LIST_EL=[['circleS','circle','S','小圆点 · 木琴','一个音，有时是连着的两个音'],['circleL','circle','L','大圆点 · 钢琴','一个和弦'],['wave','wave','L','波浪线 · 竖琴','沿着贴纸的一串琶音；大的更响、更低、音更多'],['dash','dash','L','橙色虚线 · 贝斯','长音铺底，贴多长就响多久；斜着贴会走到另一头的音高'],['scallop','scallop','L','紫色锯齿 · 鼓','一段鼓点：贴得高偏军鼓和通鼓，贴得低偏底鼓；斜得厉害就是一串过门'],['spiral','spiral','L','螺旋 · 钟','清脆的钟声，慢慢抖起来，带回声'],['tri','tri','L','蓝色三角 · 8-bit','游戏机音色的小旋律；尖朝下就往下走']];
-const LIST_QS=[['circleS','circle','S','小圆点 · 竹木琴','一个音，有时是连着的两个音'],['circleL','circle','L','大圆点 · 柔音钢琴','一个慢慢拨开的和弦'],['wave','wave','L','波浪线 · 竖琴','沿着贴纸的一串琶音；大的更响、更低、音更多'],['dash','dash','L','橙色虚线 · 暖贝斯','温暖的长音铺底，贴多长就响多久；斜着贴会走到另一头的音高'],['scallop','scallop','L','紫色锯齿 · 手鼓和木鱼','一段手打的节奏：贴得高偏木鱼和拍边，贴得低偏手鼓；斜得厉害就是一串木鱼'],['spiral','spiral','L','螺旋 · 颂钵和风铃','大的是颂钵，两个很近的音慢慢拍出抖动；小的是风铃'],['tri','tri','L','蓝色三角 · 竹笛','带气声的短旋律；尖朝下就往下走']];
+const LIST_QS=[['circleS','circle','S','小圆点 · 钢琴','一个清楚的钢琴音，有时连着两个'],['circleL','circle','L','大圆点 · 钢琴和弦','三个音的和弦，快速拨开'],['wave','wave','L','波浪线 · 竖琴','一溜往一个方向的琶音：往右上斜就一路往上，往右下斜就一路往下，平的默认往上；越斜，每一步跨得越大'],['dash','dash','L','橙色虚线 · 贝斯','真实的电贝斯，每半小节拨一下根音，贴多长弹多久；贴得高是 G，贴得低是 C'],['scallop','scallop','L','紫色锯齿 · 太鼓和通鼓','一段鲜明的鼓点：贴得低是太鼓，贴得高是通鼓和木块；斜得厉害就是一串通鼓。和背景的手鼓、沙锤分开'],['spiral','spiral','L','螺旋 · 颂钵和风铃','大的是颂钵，两个很近的音慢慢拍出抖动；小的是风铃'],['tri','tri','L','蓝色三角 · 拨弦或木琴','短促、尖、跳出来的小旋律；尖朝下就往下走']];
 function renderList(){const L=opts.style==='qs'?LIST_QS:LIST_EL;
 $('insts').innerHTML=L.map(([g,t,s,name,desc])=>`<div class="inst"><svg viewBox="-50 -22 100 44" aria-hidden="true"><g transform="scale(${t==='circle'?.9:.55})">${parts(t,s).map(p=>p.fill?`<path d="${p.d}" fill="${p.fill}"/>`:`<path d="${p.d}" fill="none" stroke="${p.stroke}" stroke-width="${p.w}" stroke-linecap="round"/>`).join('')}</g></svg><div><b>${name}</b><span>${desc}</span></div><button class="try" data-g="${g}">听听</button><button class="mute" data-g="${g}" aria-pressed="${muted.has(g)}">静音</button></div>`).join('');
 document.querySelectorAll('.mute').forEach(b=>b.onclick=()=>{const g=b.dataset.g;muted.has(g)?muted.delete(g):muted.add(g);b.setAttribute('aria-pressed',muted.has(g))});
-document.querySelectorAll('.try').forEach(b=>b.onclick=()=>{audio();const d=DEMO[b.dataset.g],st={id:'demo',...d,y:staffY(2,d.x)-d.y},notes=stickerNotes(st,2),s0=Math.min(...notes.map(n=>n.s)),now=ctx.currentTime+.05;for(const n of notes)VOICE()[n.inst](n,now+(n.s-s0)*step()+(n.dt||0))});}
+document.querySelectorAll('.try').forEach(b=>b.onclick=async()=>{audio();await loadSamples();const d=DEMO[b.dataset.g],st={id:'demo',...d,y:staffY(2,d.x)-d.y},notes=stickerNotes(st,2),s0=Math.min(...notes.map(n=>n.s)),now=ctx.currentTime+.05;for(const n of notes)VOICE()[n.inst](n,now+(n.s-s0)*step()+(n.dt||0))});}
 renderList();
 
 syncUI();

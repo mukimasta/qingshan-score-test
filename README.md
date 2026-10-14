@@ -4,3 +4,10 @@
 - `lab/` 声音试验台：扫描方式、量化、节拍、音色、风声、贝斯的组合试听
 
 测试版本，内容会随时更新。
+
+## 采样来源
+
+- 钢琴、竖琴、电贝斯、木琴：[tonejs-instruments](https://github.com/nbrosowsky/tonejs-instruments)，CC BY 3.0
+- 弦乐拨奏、太鼓、通鼓、木块：FluidR3 GM 音色库（经 [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts)），CC BY 3.0
+
+样本已裁剪、转为单声道并重新压缩。
