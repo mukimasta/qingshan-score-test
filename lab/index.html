@@ -375,7 +375,7 @@ Object.assign(Q,{
   piano(e,t){samp('piano',e.m,t,{v:1,dur:e.dur,rel:.8,dest:lowpass(4200,bus(t,e.v*.75,{wet:.4}))})}, // big dot: rolled chord
   harp(e,t){samp('harp',e.m,t,{v:1,atk:.012,dest:lowpass(3000,bus(t,e.v*.7,{wet:.45}))})},
   bass(e,t){samp('bass',e.m,t,{v:1,atk:.035,dur:e.dur*step(),rel:.35,dest:lowpass(650,bus(t,e.v*1.45,{wet:.1}))})},
-  chip(e,t){if(opts.blue==='xylo')samp('xylo',e.m,t,{v:1,dest:bus(t,e.v*.7,{wet:.3})});else samp('pizz',e.m,t,{v:1,dest:bus(t,e.v*1.0,{wet:.3})})},
+  chip(e,t){if(opts.blue==='xylo')samp('xylo',e.m,t,{v:1,dest:bus(t,e.v*1.25,{wet:.3})});else samp('pizz',e.m,t,{v:1,dest:bus(t,e.v*2.0,{wet:.3})})},
   hat(e,t){const out=bus(t,e.v*.55,{wet:.2}),g=ctx.createGain();env(g,t,1,.001,.05);g.connect(out);osc('sine',1900,t,t+.08,g);noiseHit(t,{f:1900,q:14,peak:.5,dec:.015,dest:out})},
   bkick(e,t){const out=bus(t,e.v*.5,{wet:.12}),g=ctx.createGain();env(g,t,1,.003,.4);g.connect(out);const o=osc('sine',90,t,t+.5,g);o.frequency.setValueAtTime(90,t);o.frequency.exponentialRampToValueAtTime(58,t+.09)},
   bhat(e,t){const out=bus(t,e.v*.3,{wet:.1});noiseHit(t,{type:'highpass',f:3500,peak:1,a:.012,dec:.07,dest:out})}
