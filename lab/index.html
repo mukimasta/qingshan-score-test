@@ -90,7 +90,7 @@ h2{font-size:18px;margin:0 0 4px}
       <p>一行一行：按贴的顺序，从第一行读到第六行。所有行一起：一条竖线从左扫到右，六行同时响。</p></div>
     <div class="dim"><div><span class="n">2</span><b>量化</b></div>
       <div class="seg" data-k="quant"><button data-v="off">关</button><button data-v="on">开</button></div>
-      <p>关：贴在哪就在哪响，时间是自由的。开：对齐到最近的十六分音符，节奏会整齐。</p></div>
+      <p>关：贴在哪就在哪响，时间是自由的。开：每张贴纸的起点对齐到十六分音符，贴纸内部的琶音和鼓点保持原来的流动。</p></div>
     <div class="dim"><div><span class="n">3</span><b>铺底节拍</b></div>
       <div class="seg" data-k="beat"><button data-v="off">关</button><button data-v="on">开</button></div>
       <p>开：从头到尾垫一层很轻的鼓点，空白的地方也有东西在走。</p></div>
@@ -248,15 +248,15 @@ function touched(st,primary){
   const set=new Set();for(const[x,y]of pts)for(let s=0;s<6;s++)if(s!==primary&&Math.abs(y-staffY(s,x))<=GAP*2+4)set.add(s);
   return[...set];
 }
-const opts={scan:'row',quant:'on',beat:'on',bpm:84,style:'qs',amb:'off',bass:'synth',blue:'pizz'};
+const opts={scan:'row',quant:'on',beat:'on',bpm:84,style:'qs',amb:'on',bass:'synth',blue:'pizz'};
 const PASS_ALL=64; // "all rows" sweeps the page over 4 bars
 function buildEvents(){
   const ev=[];
   for(const st of STICKERS){
     const staff=nearestStaff(st.x,st.y),notes=stickerNotes(st,staff);
-    const place=(n,row,gain)=>{let s=n.s;
-      if(opts.scan==='all'){const head=stepAt(st.x)*PASS_ALL/16;s=head+(n.s-stepAt(st.x))}
-      if(opts.quant==='on')s=Math.round(s);else s+=(Math.random()-.5)*.12;
+    // quantise only where a sticker starts; notes inside it (harp runs, drum phrases) keep their own spacing
+    const head0=Math.min(...notes.map(n=>n.s)),headPos=opts.scan==='all'?stepAt(st.x)*PASS_ALL/16+(head0-stepAt(st.x)):head0,shift=opts.quant==='on'?Math.round(headPos)-headPos:(Math.random()-.5)*.12;
+    const place=(n,row,gain)=>{const s=headPos+(n.s-head0)+shift;
       const at=(opts.scan==='row'?row*16:0)+s;
       ev.push({...n,at,v:n.v*gain*(.9+Math.random()*.2)})};
     for(const n of notes)place(n,staff,1);
