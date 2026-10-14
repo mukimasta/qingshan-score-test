@@ -242,6 +242,52 @@ h1,h2{margin:0;font-weight:700;text-wrap:balance}
   <filter id="rough" x="-5%" y="-10%" width="110%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="5"/><feDisplacementMap in="SourceGraphic" scale="3.4"/></filter>
 </defs></svg>
 
+<style>
+/* v5: kit splash, real logos, colophon, reflection box */
+.splash{position:fixed;inset:0;z-index:200;background:#bbaf8f var(--grain);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;cursor:pointer;will-change:transform}
+.splash .mark{width:min(66vw,360px);opacity:0;transform:translateY(16px) scale(.97)}
+.splash .mark img{display:block;width:100%;height:auto}
+.splash .tagline{margin:0;font-family:var(--cond);font-size:13px;letter-spacing:.32em;text-transform:uppercase;color:rgba(255,255,255,.85);opacity:0}
+.splash.in .mark{animation:markIn 1.2s cubic-bezier(.2,.7,.2,1) .15s forwards}
+.splash.in .tagline{animation:fadeIn .9s ease .9s forwards}
+@keyframes markIn{to{opacity:1;transform:none}}
+@keyframes fadeIn{to{opacity:1}}
+.splash.out{animation:lift 1.05s cubic-bezier(.76,0,.18,1) forwards}
+.splash.out .mark{animation:markOut .75s cubic-bezier(.5,0,.2,1) forwards}
+.splash.out .tagline{animation:none;opacity:0;transition:opacity .3s}
+@keyframes lift{0%{transform:none;border-radius:0}100%{transform:translateY(-104%);border-radius:0 0 48px 48px}}
+@keyframes markOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-40px) scale(.94)}}
+body.splashing{overflow:hidden}
+body.splashing .intro .rv{opacity:0}
+body.revealing .intro .rv{animation:rise .95s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*85ms + 380ms)}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+
+.masthead{display:block;width:min(84%,360px);height:auto;margin:10px 0 0}
+.mini{display:block;width:96px;height:auto;margin:0 0 18px;opacity:.88;padding:0;border:0;background:none;cursor:pointer}
+.mini img{display:block;width:100%;height:auto}
+.lead{font-size:16px;line-height:1.95;margin:22px 0 28px}
+.lead p{margin:0 0 12px}
+.lead p:last-child{margin:0}
+.steps li{grid-template-columns:40px 1fr;align-items:start}
+.steps li:before{content:none}
+.steps svg{width:34px;height:26px;margin-top:2px;overflow:visible}
+.cta-stack{display:grid;gap:22px;margin-top:4px}
+.colophon{margin-top:64px;padding-top:34px;border-top:1px dashed rgba(51,181,64,.5);text-align:center}
+.colophon .lg{width:132px;margin:0 auto 22px;display:block}
+.credits{display:grid;gap:14px;margin:0;font-size:14px;color:var(--ink)}
+.credits div{display:grid;gap:3px}
+.credits dt{font-family:var(--cond);font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
+.credits dd{margin:0;line-height:1.6}
+.colophon small{display:block;margin-top:24px;font-family:var(--cond);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.thought{display:block;width:100%;box-sizing:border-box;min-height:132px;resize:vertical;font:inherit;font-size:17px;line-height:1.75;color:var(--ink);background:#fff;border:1.5px solid var(--ink);border-radius:3px;padding:12px 14px;outline:none;box-shadow:4px 4px 0 rgba(51,181,64,.0);transition:box-shadow .2s}
+.thought:focus{box-shadow:4px 4px 0 var(--green)}
+.rec blockquote{margin:12px 0 0;font-size:17px;line-height:1.8}
+.rec .by{margin:10px 0 0;text-align:right;color:var(--muted);font-size:14px}
+@media (prefers-reduced-motion:reduce){.splash.in .mark,.splash.in .tagline{animation:fadeIn .4s forwards}.splash.out{animation:fadeOut .4s forwards}.splash.out .mark{animation:none;opacity:1}body.revealing .intro .rv{animation:none}}
+@keyframes fadeOut{to{opacity:0}}
+</style>
+
+<div class="splash" id="splash" role="img" aria-label="一份没有标准答案的青山村声音导览地图"><div class="mark"><img src="assets/splash.png" alt=""></div><p class="tagline">Record them with stickers</p></div>
 <nav class="proto" aria-label="原型页面">
   <span>原型</span>
   <button data-go="intro">介绍</button><button data-go="buy">购买</button><button data-go="scan">扫描</button><button data-go="result">乐谱</button><button data-go="save">记录</button><button data-go="routes">路线</button><button data-go="poster">海报</button><button data-go="listen">扫码页</button>
@@ -249,28 +295,40 @@ h1,h2{margin:0;font-weight:700;text-wrap:balance}
 
 <!-- intro -->
 <section class="screen intro" id="s-intro">
-  <div class="hero">
+  <div class="hero rv" style="--i:0">
     <svg class="marks" data-v="intro" viewBox="0 0 400 400" aria-hidden="true"></svg>
     <div class="sheetwrap"><div class="sheet shine"><svg viewBox="0 0 1000 1000" id="introSvg"></svg></div></div>
   </div>
-  <p class="kicker">A Sound Guide to Qingshan Village</p>
-  <h1>青山乐谱</h1>
-  <p class="sub">Qingshan Musical Score</p>
-  <p class="lead">你不必记住任何声音的名字。<br>只要记得某一阵风经过你时，<br>你听到了风的质感。</p>
-  <ol class="steps">
-    <li><div><b>听</b><span>沿着路线走，留意经过你的声音。</span></div></li>
-    <li><div><b>贴</b><span>选一枚最像它的贴纸。觉得声音在高处，就贴得高一些。</span></div></li>
-    <li><div><b>扫</b><span>扫描你的乐谱，听它变成一首歌。</span></div></li>
-  </ol>
-  <button class="btn" id="startScan">扫描我的乐谱 <em>Scan</em></button>
-  <div class="links">
-    <button class="zig" id="toBuy">还没有乐谱？看看在哪里买</button>
-    <button class="zig quiet" id="seeOther">先听听别人的</button>
+  <p class="kicker rv" style="--i:1">A Sound Guide to Qingshan Village</p>
+  <h1 class="rv" style="--i:2"><img class="masthead" src="assets/sheet-head.png" alt="青山乐谱 Qingshan Musical Score"></h1>
+  <div class="lead rv" style="--i:3">
+    <p>行走在青山村，各种各样的声音正在经过你。</p>
+    <p>竹叶的沙沙声、稻田边的虫鸣、小溪的清脆回响、脚步踩过泥土的声音。</p>
+    <p>它们就在你经历的每一个瞬间。</p>
   </div>
+  <ul class="steps rv" style="--i:4">
+    <li><svg viewBox="0 0 34 26" aria-hidden="true"><path d="M3 13 q4 -7 8 0 t8 0 t8 0" fill="none" stroke="#33b540" stroke-width="3" stroke-linecap="round"/><path d="M3 20 q4 -7 8 0 t8 0 t8 0" fill="none" stroke="#33b540" stroke-width="3" stroke-linecap="round" opacity=".5"/></svg><div><b>听</b><span>沿着路线走，留意经过你的声音。</span></div></li>
+    <li><svg viewBox="0 0 34 26" aria-hidden="true"><circle cx="13" cy="13" r="10" fill="#ed163c"/><path d="M20 22 L31 22 L25.5 12 Z" fill="#3ca5d7" style="mix-blend-mode:multiply"/></svg><div><b>贴</b><span>选一枚最像它的贴纸。觉得声音在高处，就贴得高一些。</span></div></li>
+    <li><svg viewBox="0 0 34 26" aria-hidden="true"><g fill="none" stroke="#1d1d1b" stroke-width="2.2" stroke-linecap="round"><path d="M3 8V3h6M25 3h6v5M31 18v5h-6M9 23H3v-5"/></g><line x1="7" y1="13" x2="27" y2="13" stroke="#ed163c" stroke-width="2.4"/></svg><div><b>扫</b><span>扫描你的乐谱，听它变成一首歌。</span></div></li>
+  </ul>
+  <div class="cta-stack rv" style="--i:5">
+    <button class="btn" id="startScan">扫描我的乐谱 <em>Scan</em></button>
+    <button class="btn g" id="toBuy">没有乐谱？去买一份 <em>Shop</em></button>
+  </div>
+  <div class="links rv" style="--i:6"><button class="zig quiet" id="seeOther">先听听别人的</button></div>
+  <footer class="colophon rv" style="--i:7">
+    <img class="lg" src="assets/logo.png" alt="青山乐谱">
+    <dl class="credits">
+      <div><dt>Planning · 策划团队</dt><dd>丞博、Hanlin、羊、小俞</dd></div>
+      <div><dt>Design · 设计团队</dt><dd>203 Studio</dd></div>
+    </dl>
+    <small>A Sound Guide to Qingshan Village</small>
+  </footer>
 </section>
 
 <!-- buy -->
 <section class="screen buy" id="s-buy" hidden>
+  <button class="mini" data-home aria-label="回到首页"><img src="assets/logo.png" alt="青山乐谱"></button>
   <p class="kicker">Get a Score</p>
   <h2>在哪里买到青山乐谱</h2>
   <p class="lead2">一套里有乐谱纸、六种贴纸和三条声音路线。具体地点和链接，等确认后补上。</p>
@@ -304,6 +362,7 @@ h1,h2{margin:0;font-weight:700;text-wrap:balance}
 
 <!-- result -->
 <section class="screen result" id="s-result" hidden>
+  <button class="mini" data-home aria-label="回到首页"><img src="assets/logo.png" alt="青山乐谱"></button>
   <div class="res-head">
     <p class="kicker">Your Qingshan Score</p>
     <h2 id="resTitle">读到了 24 枚贴纸</h2>
@@ -321,6 +380,7 @@ h1,h2{margin:0;font-weight:700;text-wrap:balance}
 
 <!-- save -->
 <section class="screen save" id="s-save" hidden>
+  <button class="mini" data-home aria-label="回到首页"><img src="assets/logo.png" alt="青山乐谱"></button>
   <div class="savehero">
     <svg class="marks" data-v="save" viewBox="0 0 400 400" aria-hidden="true"></svg>
     <div class="thumb"><div class="sheetwrap"><div class="sheet"><svg viewBox="0 0 1000 1000" id="saveSvg"></svg></div></div></div>
@@ -331,8 +391,8 @@ h1,h2{margin:0;font-weight:700;text-wrap:balance}
     <div class="f"><label class="k" for="name">我想给音乐起的名字：</label><input class="line-in big" id="name" maxlength="20" placeholder="午后的溪边"></div>
     <div class="f inline"><label class="k" for="date">日期：</label><input class="line-in" id="date" type="date"></div>
     <div class="f"><div class="k">天气：</div><div class="wx" id="weather"></div></div>
-    <div class="f"><div class="k">今天最想记住的三个声音：</div>
-      <div class="three"><div><span>1</span><input class="line-in" id="snd1" maxlength="16" aria-label="第一个声音" placeholder="溪水冲过石头"></div><div><span>2</span><input class="line-in" id="snd2" maxlength="16" aria-label="第二个声音"></div><div><span>3</span><input class="line-in" id="snd3" maxlength="16" aria-label="第三个声音"></div></div></div>
+    <div class="f"><label class="k" for="thought">今天的感想：</label><textarea class="thought" id="thought" maxlength="140" rows="4"></textarea></div>
+    <div class="f inline"><label class="k" for="author">署名：</label><input class="line-in" id="author" maxlength="16" placeholder="写下你的名字"></div>
   </div>
   <button class="btn" id="makePoster" disabled style="margin-top:28px">先选一条路线 <em>Route</em></button>
 </section>
@@ -348,6 +408,7 @@ h1,h2{margin:0;font-weight:700;text-wrap:balance}
 
 <!-- routes info -->
 <section class="screen routes" id="s-routes" hidden>
+  <button class="mini" data-home aria-label="回到首页"><img src="assets/logo.png" alt="青山乐谱"></button>
   <p class="kicker">Sound Routes</p>
   <h2>三条声音路线</h2>
   <p class="lead2">你可以沿着其中一条慢慢走，也可以在途中随时偏离。风声、鸟鸣、脚步、溪流、机器和人声，会随着时间、天气和位置不断变化。</p>
@@ -362,18 +423,20 @@ h1,h2{margin:0;font-weight:700;text-wrap:balance}
 
 <!-- poster -->
 <section class="screen poster" id="s-poster" hidden>
+  <button class="mini" data-home aria-label="回到首页"><img src="assets/logo.png" alt="青山乐谱"></button>
   <p class="kicker">Saved</p>
   <h2>长按图片，保存到手机</h2>
   <p class="lead2">海报上的二维码，扫开就能听这首歌。</p>
   <img id="posterImg" alt="青山乐谱海报">
   <div class="badge" id="pubBadge"><i></i><span></span></div>
   <button class="btn g" id="openListen">看看扫码后的页面 <em>Listen</em></button>
-  <div class="links"><button class="zig" id="again">再扫一张</button></div>
+  <div class="links"><button class="zig" id="again">回到首页</button></div>
   <p class="note">原型阶段：二维码里是示例地址，还不能真的打开。</p>
 </section>
 
 <!-- listen (QR target) -->
 <section class="screen listen" id="s-listen" hidden>
+  <button class="mini" data-home aria-label="回到首页"><img src="assets/logo.png" alt="青山乐谱"></button>
   <p class="kicker">Qingshan Musical Score</p>
   <p class="who" id="lsMeta"></p>
   <h1 id="lsName"></h1>
@@ -419,9 +482,10 @@ const RAW=[['dash','S',800,198,0],['spiral','L',300,265,0],['wave','L',395,385,-
 const OLD=[205,330,455,575,700,820];
 let uid=1;
 const SAMPLE_STICKERS=RAW.map(([t,s,x,y,r])=>{let i=0;for(let k=1;k<6;k++)if(Math.abs(y-OLD[k])<Math.abs(y-OLD[i]))i=k;const nx=X0+(x-110)*(X1-X0)/790;return{id:'k'+(uid++),t,s,x:nx,y:staffY(i,nx)+(y-OLD[i]),r}});
-const EXAMPLE={stickers:SAMPLE_STICKERS,route:'路线 2',name:'雨后的竹林路',date:'2026-10-08',weather:'阴',sounds:['竹叶上的水滴','远处的电锯','两个人边走边笑'],public:true,example:true};
+const PREFIX='今天印象最深刻的声音是';
+const EXAMPLE={stickers:SAMPLE_STICKERS,route:'路线 2',name:'雨后的竹林路',date:'2026-10-08',weather:'阴',thought:'今天印象最深刻的声音是竹林里有人在锯木头，和溪水的声音混在一起，忽远忽近。',author:'一位路过的人',public:true,example:true};
 // the record being made in this session (same shape as what the server will store)
-let record={stickers:SAMPLE_STICKERS,route:'',name:'',date:new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10),weather:'',sounds:['','',''],public:false};
+let record={stickers:SAMPLE_STICKERS,route:'',name:'',date:new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10),weather:'',thought:'',author:'',public:false};
 const readingOrder=st=>{const i=nearestStaff(st.x,st.y);return i*10000+st.x};
 
 // ================= score rendering =================
@@ -431,11 +495,8 @@ function drawScore(svg,stickers){
   svg.innerHTML='';
   const g=el('g',{},svg);
   STAFF_C.forEach((_,s)=>{for(let i=-2;i<=2;i++)el('line',{x1:X0,x2:X1,y1:staffY(s,X0)+i*GAP,y2:staffY(s,X1)+i*GAP,stroke:'#8f8e89','stroke-width':1.2},g)});
-  const t=el('text',{x:560,y:96,'font-size':26,'font-weight':700,fill:'#2b2b29','font-family':'var(--sans)'},g);t.textContent='青山乐谱';
-  const t2=el('text',{x:560,y:124,'font-size':19,fill:'#55544f','font-family':'var(--cond)'},g);t2.textContent='Qingshan Musical Score';
-  logo(g,410,70);
-  const f=el('text',{x:500,y:928,'text-anchor':'middle','font-size':13,fill:'#55544f','font-family':'var(--sans)'},g);f.textContent='享受你听到的每一处青山，尽情地创作吧。';
-  const f2=el('text',{x:500,y:948,'text-anchor':'middle','font-size':12,fill:'#6a6964','font-family':'var(--sans)'},g);f2.textContent='Enjoy every green mountain you hear and create to your heart’s content.';
+  el('image',{href:'assets/sheet-head.png',x:HEAD.x,y:HEAD.y,width:HEAD.w,height:HEAD.h},g);   // printed logo + title, cut from 硫酸纸.pdf
+  el('image',{href:'assets/sheet-foot.png',x:FOOT.x,y:FOOT.y,width:FOOT.w,height:FOOT.h},g);
   const gs=el('g',{},svg),nodes=new Map();
   for(const st of stickers){
     const o=el('g',{class:'sticker',transform:`translate(${st.x.toFixed(1)} ${st.y.toFixed(1)}) rotate(${st.r.toFixed(1)})`},gs);
@@ -446,7 +507,11 @@ function drawScore(svg,stickers){
   const ph=el('line',{x1:X0,x2:X0,y1:0,y2:0,stroke:'#ed163c','stroke-width':3.5,'stroke-linecap':'round',opacity:0},svg);
   return{nodes,ph};
 }
-// the little "青青山" staff logo printed on the sheet, simplified
+// where the printed header and footer sit on the 153 mm sheet (1000 units)
+const HEAD={x:328.2,y:51.7,w:343.6,h:78.2},FOOT={x:299.4,y:912.1,w:401.1,h:30.2};
+const loadImg=src=>new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=src});
+const IMGS=Promise.all(['assets/sheet-head.png','assets/sheet-foot.png','assets/logo.png'].map(loadImg));
+// (old drawn logo kept unused)
 function logoPath(x,y){const d=[];for(let i=0;i<4;i++)d.push(`M${x},${y+12+i*9}h120`);d.push(`M${x+18},${y}v60M${x+45},${y+6}v54M${x+78},${y}v62M${x+104},${y+18}v26M${x+122},${y+10}v20`);return d.join('')}
 function logo(g,x,y){el('path',{d:logoPath(x,y),stroke:'#3a3a37','stroke-width':1.6,fill:'none'},g)}
 
@@ -779,9 +844,9 @@ const ROADS='<path d="M44 60 C42 45 44 33 50 26 S62 6 70 -2" /><path d="M0 48 C2
   const WX=[['晴',`<circle cx="17" cy="15" r="10" fill="#ed163c"/>`],['多云',`<circle cx="22" cy="10" r="8" fill="#ed163c"/>${cloud('#fdfcf8','#1d1d1b')}`],['阴',cloud('#d6d4cc','#1d1d1b')],['雨',`${cloud('#fdfcf8','#1d1d1b')}<path d="M12 25 l-2 5 M18 25 l-2 5 M24 25 l-2 5" stroke="#3ca5d7" stroke-width="2" stroke-linecap="round"/>`],['雾',`<path d="M4 9 q4 -4 8 0 t8 0 t8 0 M4 16 q4 -4 8 0 t8 0 t8 0 M4 23 q4 -4 8 0 t8 0 t8 0" fill="none" stroke="#33b540" stroke-width="2" stroke-linecap="round"/>`]];
   $('weather').innerHTML=WX.map(([v,ic])=>`<button class="chip wt" data-v="${v}"><svg viewBox="0 0 34 30" aria-hidden="true">${ic}</svg>${v}</button>`).join('');
 })();
-function enterSave(){chipGroup('routes','route');chipGroup('weather','weather');$('name').value=record.name;$('date').value=record.date;['snd1','snd2','snd3'].forEach((k,i)=>$(k).value=record.sounds[i]||'');drawScore($('saveSvg'),record.stickers);checkSave()}
+function enterSave(){chipGroup('routes','route');chipGroup('weather','weather');$('name').value=record.name;$('date').value=record.date;$('thought').value=record.thought||PREFIX;$('author').value=record.author||'';drawScore($('saveSvg'),record.stickers);checkSave()}
 function checkSave(){const ok=!!record.route;$('makePoster').disabled=!ok;setBtn($('makePoster'),ok?'保存':'先选一条路线',ok?'Save':'Route')}
-function syncSave(){record.name=$('name').value.trim();record.date=$('date').value||record.date;record.sounds=['snd1','snd2','snd3'].map(k=>$(k).value.trim())}
+function syncSave(){record.name=$('name').value.trim();record.date=$('date').value||record.date;const th=$('thought').value.trim();record.thought=th===PREFIX||th===PREFIX+'…'?'':th;record.author=$('author').value.trim()}
 $('seeRoutes').onclick=()=>{syncSave();show('routes')};
 $('routesBack').onclick=()=>show('save');
 document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{record.route=b.dataset.pick;show('save')});
@@ -793,9 +858,10 @@ async function enterPoster(){
   if(!record.route){record={...EXAMPLE,stickers:SAMPLE_STICKERS}}
   const b=$('pubBadge');b.classList.toggle('on',record.public);b.querySelector('span').textContent=record.public?'已放到青山声音地图，可能会出现在声音展览里':'没有公开，只有拿到海报或链接的人能听';
   try{await document.fonts.ready}catch(e){}
-  $('posterImg').src=renderPoster(record);
+  const [head,foot,logo]=await IMGS;
+  $('posterImg').src=renderPoster(record,{head,foot,logo});
 }
-function renderPoster(r){
+function renderPoster(r,img={}){
   const W=1080,H=1760,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
   const sans='"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Microsoft YaHei",sans-serif',cond='"Barlow Condensed","Arial Narrow",sans-serif';
   x.fillStyle='#ffffff';x.fillRect(0,0,W,H);
@@ -803,8 +869,8 @@ function renderPoster(r){
   x.fillStyle='#ed163c';x.beginPath();x.arc(980,96,118,0,Math.PI*2);x.fill();
   x.strokeStyle='#33b540';x.lineWidth=2;for(let i=0;i<8;i++){x.beginPath();x.moveTo(-20,392+i*11);x.lineTo(W+20,262+i*11);x.stroke()}
   // header
-  x.fillStyle='#1c1c1a';x.font=`600 30px ${cond}`;x.textBaseline='alphabetic';spaced(x,'QINGSHAN MUSICAL SCORE',64,92,4);
-  x.font=`700 30px ${sans}`;x.fillText('青山乐谱',64,136);
+  x.textBaseline='alphabetic';
+  if(img.head)x.drawImage(img.head,64,58,420,420*img.head.height/img.head.width);else{x.fillStyle='#1c1c1a';x.font=`700 30px ${sans}`;x.fillText('青山乐谱',64,120)}
   x.fillStyle='#ed163c';x.font=`700 76px ${sans}`;x.fillText(r.name||'没有名字的歌',64,250);
   x.fillStyle='#55544f';x.font=`400 30px ${sans}`;x.fillText([r.route,dot(r.date),r.weather].filter(Boolean).join('  ·  '),66,300);
   // score sheet
@@ -812,24 +878,25 @@ function renderPoster(r){
   x.save();x.shadowColor='rgba(30,30,20,.14)';x.shadowBlur=36;x.shadowOffsetY=12;x.fillStyle='#e7e7e3';x.fillRect(sx,sy,S,S);x.restore();
   x.save();x.translate(sx,sy);x.scale(S/1000,S/1000);
   x.strokeStyle='#8f8e89';x.lineWidth=1.3;STAFF_C.forEach((_,s)=>{for(let i=-2;i<=2;i++){x.beginPath();x.moveTo(X0,staffY(s,X0)+i*GAP);x.lineTo(X1,staffY(s,X1)+i*GAP);x.stroke()}});
-  x.fillStyle='#2b2b29';x.font=`700 26px ${sans}`;x.fillText('青山乐谱',560,96);x.font=`500 19px ${cond}`;x.fillStyle='#55544f';x.fillText('Qingshan Musical Score',560,124);
-  x.strokeStyle='#3a3a37';x.lineWidth=1.6;x.stroke(new Path2D(logoPath(410,70)));x.textAlign='center';x.fillStyle='#55544f';x.font=`400 13px ${sans}`;x.fillText('享受你听到的每一处青山，尽情地创作吧。',500,928);x.textAlign='left';
+  if(img.head)x.drawImage(img.head,HEAD.x,HEAD.y,HEAD.w,HEAD.h);if(img.foot)x.drawImage(img.foot,FOOT.x,FOOT.y,FOOT.w,FOOT.h);
   for(const st of r.stickers){x.save();x.translate(st.x,st.y);x.rotate(st.r*Math.PI/180);for(const p of parts(st.t,st.s)){const path=new Path2D(p.d);if(p.fill){x.fillStyle=p.fill;x.fill(path)}else{x.strokeStyle=p.stroke;x.lineWidth=p.w;x.lineCap='round';x.lineJoin='round';x.stroke(path)}}x.restore()}
   x.restore();
   // record + QR
   const by=sy+S+70;
-  x.fillStyle='#1c1c1a';x.font=`700 30px ${sans}`;x.fillText('今天最想记住的三个声音',64,by);
-  const snds=(r.sounds||[]).filter(Boolean);x.font=`400 30px ${sans}`;
-  if(snds.length)snds.forEach((s,i)=>{x.fillStyle='#33b540';x.font=`600 34px ${cond}`;x.fillText(String(i+1),66,by+58+i*50);x.fillStyle='#3a3a37';x.font=`400 30px ${sans}`;x.fillText(s,104,by+58+i*50)});
-  else{x.fillStyle='#9a978f';x.fillText('（没有写下来，都在歌里了）',64,by+58)}
+  x.fillStyle='#33b540';x.font=`700 28px ${sans}`;x.fillText('今天的感想',64,by);
+  x.fillStyle='#2b2b29';x.font=`400 30px ${sans}`;const lines=wrap(x,r.thought||'（没有写下来，都在歌里了）',W-64-64-250);
+  lines.slice(0,5).forEach((l,i)=>x.fillText(l,64,by+56+i*46));
+  if(r.author){x.fillStyle='#7a776e';x.font=`400 26px ${sans}`;x.fillText('—— '+r.author,64,by+56+Math.min(lines.length,5)*46+16)}
   const q=210,qx=W-64-q,qy=by-34;drawQR(x,`https://soundmap.example/s/${r.id||'DEMO1'}`,qx,qy,q);
   x.fillStyle='#55544f';x.font=`400 24px ${sans}`;x.textAlign='center';x.fillText('扫码 · 听这首歌',qx+q/2,qy+q+38);x.textAlign='left';
   x.strokeStyle='rgba(28,28,26,.14)';x.lineWidth=1.5;x.beginPath();x.moveTo(64,H-112);x.lineTo(W-64,H-112);x.stroke();
-  x.fillStyle='#9a978f';x.font=`400 22px ${sans}`;x.fillText('一份没有标准答案的青山村声音导览',64,H-60);
-  x.font=`500 22px ${cond}`;spacedR(x,'A SOUND GUIDE TO QINGSHAN VILLAGE',W-64,H-60,2);x.textAlign='left';
+  let fx=64;if(img.logo){const lw=104,lh=lw*img.logo.height/img.logo.width;x.globalAlpha=.9;x.drawImage(img.logo,64,H-60-lh+6,lw,lh);x.globalAlpha=1;fx=64+lw+22}
+  x.fillStyle='#9a978f';x.font=`400 22px ${sans}`;x.textAlign='right';x.fillText('一份没有标准答案的青山村声音导览',W-64,H-72);
+  x.font=`500 20px ${cond}`;spacedR(x,'A SOUND GUIDE TO QINGSHAN VILLAGE',W-64,H-40,2);x.textAlign='left';
   return c.toDataURL('image/png');
 }
 const dot=d=>d?d.replace(/-/g,'.'):'';
+function wrap(x,t,maxW){const out=[];let line='';for(const ch of t){if(x.measureText(line+ch).width>maxW&&line){out.push(line);line=ch}else line+=ch}if(line)out.push(line);return out}
 function spaced(x,s,X,Y,sp){for(const ch of s){x.fillText(ch,X,Y);X+=x.measureText(ch).width+sp}}
 function spacedR(x,s,X,Y,sp){x.textAlign='left';let w=0;for(const ch of s)w+=x.measureText(ch).width+sp;spaced(x,s,X-w+sp,Y,sp)}
 function drawQR(x,text,X,Y,size){
@@ -838,7 +905,7 @@ function drawQR(x,text,X,Y,size){
   for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))x.fillRect(X+c*m,Y+r*m,Math.ceil(m),Math.ceil(m));
 }
 $('openListen').onclick=()=>show('listen');
-$('again').onclick=()=>{record={...record,id:null,route:'',name:'',weather:'',sounds:['','',''],public:false};show('scan')};
+$('again').onclick=()=>{record={...record,id:null,route:'',name:'',weather:'',thought:'',author:'',public:false};show('intro')};
 
 // ---------- listen (what the QR opens) ----------
 function enterListen(r){
@@ -846,8 +913,8 @@ function enterListen(r){
   $('lsName').textContent=r.name||'没有名字的歌';
   const v=drawScore($('listenSvg'),r.stickers);const sh=$('lsSheet');sh.classList.remove('shine');void sh.offsetWidth;sh.classList.add('shine');
   players.forEach(p=>p.stop());players=[makePlayer($('lsPlayer'),v,()=>r.stickers)];
-  const s=(r.sounds||[]).filter(Boolean);
-  $('lsRec').innerHTML=s.length?`<p class="kicker">今天最想记住的三个声音</p><ol>${s.map(x=>`<li>${x.replace(/[<&]/g,'')}</li>`).join('')}</ol>`:'';
+  const esc=t=>String(t).replace(/[<&>]/g,'');
+  $('lsRec').innerHTML=r.thought?`<p class="kicker">今天的感想</p><blockquote>${esc(r.thought)}</blockquote>${r.author?`<p class="by">—— ${esc(r.author)}</p>`:''}`:'';
 }
 
 $('pubYes').onclick=()=>publish(true);$('pubNo').onclick=()=>publish(false);
@@ -866,6 +933,11 @@ document.querySelectorAll('.btn').forEach((b,i)=>{
   b.insertAdjacentHTML('afterbegin',`<svg class="bb" viewBox="-4 -4 318 76" preserveAspectRatio="none" aria-hidden="true"><path class="pl" d="${plate}"/><path class="fc" d="${face}"/></svg>`);
   b.style.setProperty('--tilt',((R()-.5)*2.2).toFixed(2)+'deg');
 });
+document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>show('intro'));
+// opening: the kit's cover mark, then it lifts away like the paper sleeve
+(function splash(){const sp=$('splash');document.body.classList.add('splashing');requestAnimationFrame(()=>sp.classList.add('in'));let gone=false;
+  const leave=()=>{if(gone)return;gone=true;sp.classList.add('out');document.body.classList.remove('splashing');document.body.classList.add('revealing');setTimeout(()=>{sp.remove();document.body.classList.remove('revealing')},2200)};
+  sp.onclick=leave;setTimeout(leave,2600)})();
 show('intro');
 })();
 </script>
