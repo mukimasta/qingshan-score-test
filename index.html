@@ -252,16 +252,21 @@ h1,h2{margin:0;font-weight:700;text-wrap:balance}
 .splash.in .tagline{animation:fadeIn .9s ease .9s forwards}
 @keyframes markIn{to{opacity:1;transform:none}}
 @keyframes fadeIn{to{opacity:1}}
-.splash.out{animation:lift 1.05s cubic-bezier(.76,0,.18,1) forwards}
-.splash.out .mark{animation:markOut .75s cubic-bezier(.5,0,.2,1) forwards}
+.splash.out{cursor:default}
+.splash.out .mark img{transition:opacity .42s ease;opacity:0}
+.splash .tri-ov{position:fixed;pointer-events:none;fill:#fff;transition:fill .42s ease}
+.splash.out .tri-ov{fill:#f6f5f0}
 .splash.out .tagline{animation:none;opacity:0;transition:opacity .3s}
 @keyframes lift{0%{transform:none;border-radius:0}100%{transform:translateY(-104%);border-radius:0 0 48px 48px}}
 @keyframes markOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-40px) scale(.94)}}
 body.splashing{overflow:hidden}
 body.splashing .intro .rv{opacity:0}
-body.revealing .intro .rv{animation:rise .95s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*85ms + 380ms)}
+body.revealing .intro .rv{animation:rise .95s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0)*85ms + 120ms)}
 @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
 
+.intro h1.title{display:flex;align-items:flex-end;gap:14px;line-height:1}
+.intro h1.title .tri{width:44px;height:auto;flex:none;fill:#bbaf8f;margin-bottom:5px}
+.intro .sub{margin-top:8px}
 .masthead{display:block;width:min(84%,360px);height:auto;margin:10px 0 0}
 .mini{display:block;width:96px;height:auto;margin:0 0 18px;opacity:.88;padding:0;border:0;background:none;cursor:pointer}
 .mini img{display:block;width:100%;height:auto}
@@ -286,7 +291,7 @@ body.revealing .intro .rv{animation:rise .95s cubic-bezier(.2,.7,.2,1) both;anim
 .thought:focus{box-shadow:4px 4px 0 var(--green)}
 .rec blockquote{margin:12px 0 0;font-size:17px;line-height:1.8}
 .rec .by{margin:10px 0 0;text-align:right;color:var(--muted);font-size:14px}
-@media (prefers-reduced-motion:reduce){.splash.in .mark,.splash.in .tagline{animation:fadeIn .4s forwards}.splash.out{animation:fadeOut .4s forwards}.splash.out .mark{animation:none;opacity:1}body.revealing .intro .rv{animation:none}}
+@media (prefers-reduced-motion:reduce){.splash.in .mark,.splash.in .tagline{animation:fadeIn .4s forwards}body.revealing .intro .rv{animation:none}}
 @keyframes fadeOut{to{opacity:0}}
 </style>
 
@@ -303,7 +308,8 @@ body.revealing .intro .rv{animation:rise .95s cubic-bezier(.2,.7,.2,1) both;anim
     <div class="sheetwrap"><div class="sheet shine"><svg viewBox="0 0 1000 1000" id="introSvg"></svg></div></div>
   </div>
   <p class="kicker rv" style="--i:1">A Sound Guide to Qingshan Village</p>
-  <h1 class="rv" style="--i:2"><img class="masthead" src="assets/sheet-head.png" alt="青山乐谱 Qingshan Musical Score"></h1>
+  <h1 class="rv title" style="--i:2"><svg class="tri" viewBox="0 0 100 86.6" aria-hidden="true"><path d="M50 0 L100 86.6 L0 86.6 Z"/></svg>青山乐谱</h1>
+  <p class="sub rv" style="--i:2">Qingshan Musical Score</p>
   <div class="lead rv" style="--i:3">
     <p>行走在青山村，各种各样的声音正在经过你。</p>
     <p>竹叶的沙沙声、稻田边的虫鸣、小溪的清脆回响、脚步踩过泥土的声音。</p>
@@ -932,8 +938,22 @@ document.querySelectorAll('.btn').forEach((b,i)=>{
 });
 document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>show('intro'));
 // opening: the kit's cover mark, then it lifts away like the paper sleeve
-(function splash(){const sp=$('splash');document.body.classList.add('splashing');requestAnimationFrame(()=>sp.classList.add('in'));let gone=false;
-  const leave=()=>{if(gone)return;gone=true;sp.classList.add('out');document.body.classList.remove('splashing');document.body.classList.add('revealing');setTimeout(()=>{sp.remove();document.body.classList.remove('revealing')},2200)};
+(function splash(){const sp=$('splash'),reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;document.body.classList.add('splashing');requestAnimationFrame(()=>sp.classList.add('in'));let gone=false;
+  // the cover triangle (in splash.png pixels) becomes a window into the page and opens up
+  const T=[[363.5,76],[8,691],[719.5,691]],IW=900,IH=898;
+  const leave=()=>{if(gone)return;gone=true;const img=sp.querySelector('.mark img'),r=img.getBoundingClientRect(),k=r.width/IW;
+    const P=T.map(([x,y])=>[r.left+x*k,r.top+y*k]);
+    const ov=document.createElementNS('http://www.w3.org/2000/svg','svg');ov.setAttribute('class','tri-ov');ov.setAttribute('width',innerWidth);ov.setAttribute('height',innerHeight);ov.style.left=ov.style.top='0';
+    ov.innerHTML=`<path d="M${P[0]} L${P[1]} L${P[2]} Z"/>`;sp.appendChild(ov);
+    requestAnimationFrame(()=>sp.classList.add('out'));
+    const c=[(P[0][0]+P[1][0]+P[2][0])/3,(P[0][1]+P[1][1]+P[2][1])/3],side=P[2][0]-P[1][0],inr=side/(2*Math.sqrt(3));
+    const W=innerWidth,H=innerHeight,far=Math.max(...[[0,0],[W,0],[0,H],[W,H]].map(([x,y])=>Math.hypot(x-c[0],y-c[1]))),S=far/inr*1.04;
+    const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,DUR=1400,WAIT=reduce?0:440;
+    const frame=sc=>{const q=P.map(([x,y])=>[c[0]+(x-c[0])*sc,c[1]+(y-c[1])*sc]);sp.style.clipPath=`path(evenodd,"M0 0 H${W} V${H} H0 Z M${q[0]} L${q[1]} L${q[2]} Z")`};
+    setTimeout(()=>{ov.remove();frame(1);document.body.classList.remove('splashing');document.body.classList.add('revealing');
+      if(reduce){sp.remove();return}
+      const t0=performance.now();const step=now=>{const t=Math.min(1,(now-t0)/DUR);frame(1+(S-1)*ease(t));if(t<1)requestAnimationFrame(step);else sp.remove()};requestAnimationFrame(step);
+      setTimeout(()=>document.body.classList.remove('revealing'),2200)},WAIT)};
   sp.onclick=leave;setTimeout(leave,2600)})();
 show('intro');
 })();
