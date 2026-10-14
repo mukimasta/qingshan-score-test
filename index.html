@@ -836,8 +836,8 @@ function stickerNotes(st,staff){
     case 'dash':{ // bass: flat dash = one held note; tilted dash = a quick walk from its left end's height to its right end's, repeats merged
       const fold=m=>{while(m>50)m-=12;while(m<31)m+=12;return m},v=big?.85:.6;
       const D=Math.max(-5,Math.min(5,Math.round((kB-kA)*.35)));
-      if(!D){add({inst:'bass',s:sA,m:fold(midiOf(k0,-24)),v,dur:big?6:3.5,g:'dash'});break}
-      const hitsAt=big?[0,1.5,3,4,5.5,7]:[0,1.5,3],end=hitsAt[hitsAt.length-1]+1.5,seq=[];
+      if(!D){add({inst:'bass',s:sA,m:fold(midiOf(k0,-24)),v,dur:big?6:4,g:'dash'});break}
+      const hitsAt=big?[0,2,4,6,8,10]:[0,2,4],end=hitsAt[hitsAt.length-1]+2,seq=[];
       hitsAt.forEach((o,i)=>{const m=fold(midiOf(Math.round(k0-D/2+D*i/(hitsAt.length-1)),-24));
         if(seq.length&&seq[seq.length-1].m===m)return;seq.push({o,m})});
       seq.forEach((n,i)=>add({inst:'bass',s:sA+n.o,m:n.m,v:v*(i?.85:1),dur:((seq[i+1]?seq[i+1].o:end)-n.o)+.25,g:'dash'}));
@@ -875,7 +875,7 @@ function buildEvents(){
     const staff=nearestStaff(st.x,st.y),notes=stickerNotes(st,staff);
     // quantise only where a sticker starts; notes inside it (harp runs, drum phrases) keep their own spacing
     const head0=Math.min(...notes.map(n=>n.s)),headPos=opts.scan==='all'?stepAt(st.x)*PASS_ALL/16+(head0-stepAt(st.x)):head0,shift=opts.quant==='on'?Math.round(headPos)-headPos:(Math.random()-.5)*.12;
-    const place=(n,row,gain)=>{const s=headPos+(n.s-head0)+shift;
+    const place=(n,row,gain)=>{let s=headPos+(n.s-head0)+shift;if(n.inst==='bass')s=Math.round(s/2)*2; // bass sits on the eighth-note grid
       const at=(opts.scan==='row'?row*16:0)+s;
       ev.push({...n,at,v:n.v*gain*(.9+Math.random()*.2)})};
     for(const n of notes)place(n,staff,1);
