@@ -226,10 +226,10 @@ function credits(t){const a=CRED;if(t<a)return;
   x.fillStyle=C.ink;x.font=`400 50px ${CJK}`;cc('203 Studio',848+(1-p)*16,1);
   x.restore()}
 
-// ---------- a small QR code in the bottom-right corner (https://qingshan.mukii.space/score): from the end card through the credits ----------
+// ---------- a small QR code in the bottom-right corner of the end card (https://qingshan.mukii.space/score); it leaves with the end card ----------
 const QR=["11111110111001110111001111111", "10000010111011001010001000001", "10111010010110001001001011101", "10111010101110110101001011101", "10111010010000101111001011101", "10000010010101011101101000001", "11111110101010101010101111111", "00000000101000011110100000000", "10110111011011011110001001011", "10011000111011110001101110001", "10011011011101001100000010110", "01101101111100000000010100001", "01100011001110110101000001100", "01010000101000111101001000111", "10101111010011001001100010111", "01011100001100100000110100010", "10100111100110101010010111010", "01000101000100110000100101110", "10101110100101111110110110100", "00100001110001111110010110100", "01011010100101111110111111100", "00000000100100001010100011111", "11111110100010101111101011010", "10000010100101111010100011000", "10111010011110010110111110110", "10111010100011011000010111001", "10111010100101100110100100101", "10000010011001100000101111010", "11111110111001001010101101010"];   // version 3, level M
-function cornerQR(t){const a=S7[0];if(t<a+1.2)return;const p=eo(seg(t,a+1.2,a+2.0)),n=QR.length,mod=6,x0=1790-n*mod,y0=Math.round(698+(1-p)*12);
-  x.save();x.globalAlpha=p;x.fillStyle=C.ink;for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(QR[i][j]==='1')x.fillRect(x0+j*mod,y0+i*mod,mod,mod);x.restore()}
+function cornerQR(t){const a=S7[0];if(t<a+1.2)return;const p=eo(seg(t,a+1.2,a+2.0))*(1-sine(seg(t,CRED,CRED+.75))),n=QR.length,mod=6,x0=1790-n*mod,y0=Math.round(698+(1-p)*12);
+  if(p<=0)return;x.save();x.globalAlpha=p;x.fillStyle=C.ink;for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(QR[i][j]==='1')x.fillRect(x0+j*mod,y0+i*mod,mod,mod);x.restore()}
 
 // ================= one frame =================
 function draw(t){
