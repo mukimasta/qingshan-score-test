@@ -43,7 +43,7 @@ Y=(Me*10**((G+DM)/20)+R*10**(G/20))*E
 f=np.minimum(1,np.minimum(tt/.4,(tt[-1]-tt)/1.0)).clip(0)[:,None];Y*=f
 pre={n:rms(Y,a,b) for n,a,b in [(f'row {r+1}',at(6+r),at(7+r)) for r in range(6)]}
 tmp='/home/claude/film/_m.wav';sf.write(tmp,Y.astype(np.float32),sr,subtype='FLOAT')
-subprocess.run(['ffmpeg','-v','error','-y','-i',tmp,'-af','alimiter=limit=0.89:attack=3:release=80:level=false','-ar','48000','-c:a','pcm_s16le',out],check=True)
+subprocess.run(['ffmpeg','-v','error','-y','-i',tmp,'-af','alimiter=limit=0.84:attack=3:release=80:level=false','-ar','48000','-c:a','pcm_s16le',out],check=True)
 json.dump({'G':G,'DM':DM,'LS':LS,'LM':LM,'HG':HG,'pts':PTS},open(out.replace('.wav','.json'),'w'))
 y2,sr2=sf.read(out);m=y2.mean(axis=1)
 def r2(a,b):s=m[int(a*sr2):int(b*sr2)];return 20*np.log10(np.sqrt((s**2).mean())+1e-12)
