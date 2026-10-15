@@ -22,7 +22,7 @@ const OPEN=[3.8,5.8];                                   // the cover's triangle 
 const WALK=[6.4,13.6];                                   // one continuous walk along route A (as in v2)
 const MAPOUT=[13.8,14.75],T0=14.6;
 const PULL=0,at=(b,s=0)=>T0+b*BAR+s*ST-(b*16+s>=24-1e-6?PULL:0);   // bar 0 = start of 02
-const CRED=at(12)+3.7,DUR=CRED+5.3;const EXTRA=/[?&]mm\b/.test(location.search)?3.4:0;   // personal cut: a MUKIMASTA page after the credits                    // end card, then the credits
+const CRED=at(12)+3.7,DUR=CRED+5.3;const EXTRA=/[?&]mm\b/.test(location.search)?3.4:0;const LINE=/[?&]line\b/.test(location.search);   // personal cut: a MUKIMASTA page after the credits                    // end card, then the credits
 const S2=[OPEN[1]-.25,MAPOUT[0]+.35];                    // 01 listen
 const S3=[at(0),at(3)],KT=[0,.5,1,1.5,2,2.5].map(b=>at(b)); // 02 choose: a kind every half bar; the drum (4th) brings in the beat
 const S4=[at(3),at(5)],S5=[at(5),at(6)],S6=[at(6),at(12)],S7=[at(12),DUR]; // 03 stick · 04 scan · 05 play · end
@@ -225,11 +225,11 @@ function credits(t){const a=CRED;if(t<a)return;
   x.fillStyle=C.ink;x.font=`400 50px ${CJK}`;cc('丞博、Hanlin、羊、小俞',648+(1-p)*16,1);
   p=k(2);x.globalAlpha=p;x.fillStyle=grey;x.font=`400 32px ${CJK}`;cc('设计团队',768+(1-p)*16,14);
   x.fillStyle=C.ink;x.font=`400 50px ${CJK}`;cc('203 Studio',848+(1-p)*16,1);
-  // the film's own maker: one line at the foot of the page, apart from the project teams (MUKIMASTA in its own serif, as on mukii.space)
-  p=k(3.4);x.globalAlpha=p*.9;const lab='宣传片制作',nm='MUKIMASTA',gap=28,y0=990+(1-p)*10;
-  x.font=`400 30px ${CJK}`;const w1=spacedW(lab,10);x.font=`600 38px "Newsreader",serif`;const w2=x.measureText(nm).width,x0=(W-w1-gap-w2)/2;
-  x.fillStyle=grey;x.font=`400 30px ${CJK}`;spaced(lab,x0,y0,10);
-  x.fillStyle='#55534d';x.font=`600 38px "Newsreader",serif`;x.fillText(nm,x0+w1+gap,y0+1);
+  // ?line: the film's own maker, one line at the foot of the credits (MUKIMASTA in Newsreader, as on mukii.space)
+  if(LINE){p=k(3.4);x.globalAlpha=p*.9;const lab='宣传片制作',nm='MUKIMASTA',gap=28,y0=990+(1-p)*10;
+    x.font=`400 30px ${CJK}`;const w1=spacedW(lab,10);x.font=`600 38px "Newsreader",serif`;const w2=x.measureText(nm).width,x0=(W-w1-gap-w2)/2;
+    x.fillStyle=grey;x.font=`400 30px ${CJK}`;spaced(lab,x0,y0,10);
+    x.fillStyle='#55534d';x.font=`600 38px "Newsreader",serif`;x.fillText(nm,x0+w1+gap,y0+1)}
   x.restore()}
 
 // ---------- a small QR code in the bottom-right corner of the end card (https://qingshan.mukii.space/score); it leaves with the end card ----------
