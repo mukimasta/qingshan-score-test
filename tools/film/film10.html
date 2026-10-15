@@ -250,7 +250,7 @@ const NM={C:0,D:2,E:4,F:5,G:7,A:9,B:11},mid=s=>{const m=s.match(/^([A-G])(#?)(-?
 const CARD=[['circle',-3,0],['wave',0,FLAT_R()],['dash',2,FLAT_R()],['scallop',0,FLAT_R()],['spiral',0,0],['tri',-1,0]]
   .map(([t,k,r],i)=>{const x0=470,st={id:'card'+i,t,s:'L',x:x0,y:0,r};st.y=staffY(2,x0)-k*GAP/2;return st});
 function FLAT_R(){return Math.atan(SLOPE)*180/Math.PI}
-const BASS_TRIM=.7,INST_UP=1.2,SCAN_UP=1.3;   // every bass 70% · the other sticker instruments 120% · the rising scan arpeggio (04) 130%
+const BASS_TRIM=.7,INST_UP=1.2,SCAN_UP=1.8;   // every bass 70% · the other sticker instruments 120% · the rising scan arpeggio (04) brighter and louder
 function musicEvents(){
   const E=[],add=(inst,t,o={})=>E.push({inst,at:t,v:.6,src:'film',...o});
   // --- 02: each card plays exactly what that sticker plays on the website; the cards grow louder one by one
@@ -273,7 +273,7 @@ function musicEvents(){
   ['A3','C4','E4','A4'].forEach((n,i)=>add('harp',at(2,12+i),{m:mid(n),v:.16+i*.03}));   // a small lift into 03
   // --- 03: no melody on top — the stickers land on the groove's 16ths while the bass line walks underneath
   // --- 04: harp climbs with the scan line, a tom fill and a soft swell; the score starts on the downbeat
-  ['F3','A3','C4','E4','F4','A4','C5','E5','F5','A5','C6','E6'].forEach((n,i)=>add('harp',at(5,1+i),{m:mid(n),v:(.15+i*.018)*SCAN_UP}));
+  ['F3','A3','C4','E4','F4','A4','C5','E5','F5','A5','C6','E6'].forEach((n,i)=>add('harpfx',at(5,1+i),{m:mid(n),v:(.3+i*.01)*SCAN_UP}));   // brighter harp, even from the first note
   [60,64,67,72].forEach((m,i)=>add('tom',at(5,12+i),{m,v:.3+i*.05}));
   add('swell',at(5,6),{v:.5,dur:at(6)-at(5,6)});
   for(const e of E)if(e.at>=at(3)-.01&&e.at<at(6)-.01)e.v*=.84;
@@ -318,6 +318,8 @@ Q.fsnare=(e,t)=>{const out=bus(t,e.v*.9,{wet:.2}),g=ctx.createGain();env(g,t,.7,
 Q.ltom=(e,t)=>{const f=e.f||130,d=e.dec||.38,out=bus(t,e.v*.85,{wet:.2}),g=ctx.createGain();env(g,t,1,.002,d);g.connect(out);   // a low tom with a skin
   const o=osc('sine',f*1.6,t,t+d+.1,g);o.frequency.setValueAtTime(f*1.6,t);o.frequency.exponentialRampToValueAtTime(f,t+.06);
   const h=ctx.createGain();env(h,t,.3,.001,d*.45);h.connect(out);osc('triangle',f*2.02,t,t+d,h);noiseHit(t,{type:'lowpass',f:1400,q:.7,peak:.4,dec:.04,dest:out})};
+// the rising scan arpeggio in 04: the same harp, but open (6.5 kHz instead of 1.8 kHz), with a quick attack and less reverb, so it rings out
+Q.harpfx=(e,t)=>samp('harp',e.m,t,{v:1,atk:.004,dest:lowpass(6500,bus(t,e.v*.8,{wet:.32,echo:.12}))});
 Q.shk=(e,t)=>{const out=bus(t,e.v*2.6,{wet:.06});noiseHit(t,{type:'bandpass',f:4200,q:1.2,peak:1,a:.008,dec:.05,dest:out})};
 Q.ohat=(e,t)=>{const out=bus(t,e.v*.34,{wet:.14});const n=ctx.createBufferSource();n.buffer=noise;const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=5200;const pk=ctx.createBiquadFilter();pk.type='peaking';pk.frequency.value=7500;pk.gain.value=3;
   const g=ctx.createGain();g.gain.setValueAtTime(1e-4,t);g.gain.linearRampToValueAtTime(1,t+.004);g.gain.exponentialRampToValueAtTime(.25,t+.08);g.gain.exponentialRampToValueAtTime(1e-4,t+.3);n.connect(hp);hp.connect(pk);pk.connect(g);g.connect(out);n.start(t,Math.random()*.4);n.stop(t+.34)};
