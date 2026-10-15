@@ -129,7 +129,7 @@ function listenCredit(t){const a=eo(seg(t,S2[0]+1.4,S2[0]+2.2))*(1-sine(seg(t,S2
   x.save();x.globalAlpha=a*.85;x.fillStyle=C.muted;x.font=`400 24px ${CJK}`;x.fillText('声音录自青山声音地图',120,700);x.restore()}
 
 // ---------- 02 choose: six kinds; the drum card starts the beat ----------
-const KINDS=[['circle','L','圆点','钢琴'],['wave','L','波浪','竖琴'],['scallop','L','半圆','手鼓'],['dash','L','虚线','贝斯'],['spiral','L','螺旋','钟声'],['tri','L','三角','木琴']];
+const KINDS=[['circle','L','圆点','钢琴'],['wave','L','波浪','竖琴'],['dash','L','虚线','贝斯'],['spiral','L','螺旋','钟声'],['scallop','L','半圆','手鼓'],['tri','L','三角','木琴']];
 const LEN0={circle:78,wave:168,dash:150,scallop:146,spiral:60,tri:97},CARDOUT=[at(3)-.75,at(3)-.05];
 function chooseScene(t){
   if(t<S3[0]-.3||t>CARDOUT[1]+.05)return;const out=sine(seg(t,CARDOUT[0],CARDOUT[1]));
@@ -263,7 +263,7 @@ function draw(t){
 // The film's own music: bass + soft chords + the beat from 02's drum card through 03 and 04 (as in v2, the bass carries 03);
 // while the score plays, the only thing added is drums; then the closing chord.
 const NM={C:0,D:2,E:4,F:5,G:7,A:9,B:11},mid=s=>{const m=s.match(/^([A-G])(#?)(-?\d)$/);return 12*(+m[3]+1)+NM[m[1]]+(m[2]?1:0)};
-const CARD=[['circle',-3,0],['wave',0,FLAT_R()],['scallop',0,FLAT_R()],['dash',2,FLAT_R()],['spiral',0,0],['tri',-1,0]]
+const CARD=[['circle',-3,0],['wave',0,FLAT_R()],['dash',2,FLAT_R()],['spiral',0,0],['scallop',0,FLAT_R()],['tri',-1,0]]
   .map(([t,k,r],i)=>{const x0=470,st={id:'card'+i,t,s:'L',x:x0,y:0,r};st.y=staffY(2,x0)-k*GAP/2;return st});
 function FLAT_R(){return Math.atan(SLOPE)*180/Math.PI}
 const BASS_TRIM=.7,INST_UP=1.2,SCAN_UP=1.8;   // every bass 70% · the other sticker instruments 120% · the rising scan arpeggio (04) brighter and louder
@@ -274,18 +274,15 @@ function musicEvents(){
   CARD.forEach((st,i)=>{const notes=stickerNotes(st,2),h0=Math.min(...notes.map(n=>n.s));for(const n of notes)E.push({...n,v:n.v*CG[i],at:KT[i]+(n.s-h0)*ST+(n.dt||0),vid:'card'+i})});
   // --- the beat comes in with the 半圆 (the website's light beat + the 半圆's hand-drum phrase) and runs straight into the score
   const webBeat=(bar,g)=>{const o=at(bar);
-    [[0,.5],[10,.3]].forEach(([s,v])=>add('bkick',o+s*ST,{v:v*g,vid:'card2'}));
+    [[0,.5],[10,.3]].forEach(([s,v])=>add('bkick',o+s*ST,{v:v*g,vid:'card4'}));
     for(let s=0;s<16;s+=2)add('bhat',o+(s+(s%4?.08:0))*ST,{v:(s%4?.14:.22)*g})};
-  const handDrum=(bar,g)=>{const DR={K:'kick',S:'snare',H:'hat'};[...'K.HKS.KS'].forEach((c,i)=>{if(c!=='.')add(DR[c],at(bar,8+i),{v:(c==='H'?.5:1)*.9*g,m:60,vid:'card2'})})};
-  // v11: two soft count-in clicks ('3, 4') put the red circle on '1'; from it a light groove runs — kick on 1 and 3, 8th hats,
-  // a held A under bar 1 — so the 4/4 is there from the first card; the 半圆's hand drum then starts bar 2 on its downbeat
-  add('bhat',at(-1,8),{v:.09});add('bhat',at(-1,12),{v:.11});
-  for(let e=0;e<16;e++){const bar1=e>=8,g=bar1?1.15:1,on=e%2===0;add('bhat',at(0,e*2)+(on?0:.008),{v:(on?.15:.08)*g});}
-  [[0,.3],[8,.3],[24,.36]].forEach(([q,v])=>add('bkick',at(0,q),{v}));
-  add('bass',at(0),{m:mid('A1'),v:.26,dur:14});
+  const handDrum=(bar,g)=>{const DR={K:'kick',S:'snare',H:'hat'};[...'K.HKS.KS'].forEach((c,i)=>{if(c!=='.')add(DR[c],at(bar,8+i),{v:(c==='H'?.5:1)*.9*g,m:60,vid:'card4'})})};
+  // v11b: the first four cards play on their own; the 半圆 is the 5th card, on bar 3's downbeat, and brings in the drums and the bass line
+  // …and the 螺旋's bell phrase comes back with it, so the bell joins the band
+  {const st=CARD[3],notes=stickerNotes(st,2),h0=Math.min(...notes.map(n=>n.s));for(const n of notes)E.push({...n,v:n.v*.8,at:at(2)+(n.s-h0)*ST+(n.dt||0),vid:'card3'})}
   webBeat(2,.72);handDrum(2,.62);webBeat(3,.82);handDrum(3,.7);webBeat(4,.88);handDrum(4,.74);webBeat(5,.9);
   const shaker=(bar,from,to,g)=>{for(let s=from;s<to;s++){if(s%2===0)continue;add('shk',at(bar,s)+.02,{v:(s%4===3?.13:.09)*g})}};   // the 16ths between the website's 8th hats
-  shaker(1,8,16,.5);shaker(2,0,16,.6);shaker(3,0,16,.66);shaker(4,0,16,.7);shaker(5,0,12,.63);
+  shaker(2,0,16,.6);shaker(3,0,16,.66);shaker(4,0,16,.7);shaker(5,0,12,.63);
   // --- the film's own harmony: bass + soft chords from bar 2, building into the score (Am · C · Am7 · F→G → C)
   const BASS={2:[['A1',0,5],['E2',6,2],['A2',10,3],['G2',14,2]],3:[['C2',0,5],['G2',6,2],['E2',10,3],['G2',14,2]],4:[['A1',0,5],['E2',6,2],['A2',10,3],['G2',14,2]],5:[['F2',0,7],['G2',8,7]]};
   const BG={2:.294,3:.364,4:.392,5:.35};   // 03 is carried by the bass (as in v2); final: 30% under v9's level
