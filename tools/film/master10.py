@@ -38,7 +38,7 @@ PRE,R13,R4A,R4B,R5,R6,END=-1.2,-3.2,-2.3,-1.7,3.0,-0.5,-1.0
 PTS=[(0,PRE),(at(6)-.3,PRE),(at(6)+.12,R13),(at(9)-.15,R13),(at(9)+.15,R4A),(at(10)-.25,R4B),(at(10)+.08,R5),(at(11)-.1,R5),(at(11)+.25,R6),(at(12)-.1,R6),(at(12)+1.6,R6),(at(12)+2.8,END),(N/sr+1,END)]
 E=10**(np.interp(tt,[p[0] for p in PTS],[p[1] for p in PTS])/20)[:,None]
 def rms(x,a,b):s=x[int(a*sr):int(b*sr)].mean(axis=1);return 20*np.log10(np.sqrt((s**2).mean())+1e-12)
-G=-13.0-rms((M+R)*E,at(10),at(11))                              # exactly v9's gain
+G=float(sys.argv[4]) if len(sys.argv)>4 else -13.0-rms((M+R)*E,at(10),at(11))   # v9's gain (pass it to keep it fixed)
 Y=(Me*10**((G+DM)/20)+R*10**(G/20))*E
 f=np.minimum(1,np.minimum(tt/.4,(tt[-1]-tt)/1.0)).clip(0)[:,None];Y*=f
 pre={n:rms(Y,a,b) for n,a,b in [(f'row {r+1}',at(6+r),at(7+r)) for r in range(6)]}

@@ -250,6 +250,7 @@ const NM={C:0,D:2,E:4,F:5,G:7,A:9,B:11},mid=s=>{const m=s.match(/^([A-G])(#?)(-?
 const CARD=[['circle',-3,0],['wave',0,FLAT_R()],['dash',2,FLAT_R()],['scallop',0,FLAT_R()],['spiral',0,0],['tri',-1,0]]
   .map(([t,k,r],i)=>{const x0=470,st={id:'card'+i,t,s:'L',x:x0,y:0,r};st.y=staffY(2,x0)-k*GAP/2;return st});
 function FLAT_R(){return Math.atan(SLOPE)*180/Math.PI}
+const BASS_TRIM=.7;
 function musicEvents(){
   const E=[],add=(inst,t,o={})=>E.push({inst,at:t,v:.6,src:'film',...o});
   // --- 02: each card plays exactly what that sticker plays on the website; the cards grow louder one by one
@@ -265,7 +266,7 @@ function musicEvents(){
   shaker(1,8,16,.5);shaker(2,0,16,.6);shaker(3,0,16,.66);shaker(4,0,16,.7);shaker(5,0,12,.63);
   // --- the film's own harmony: bass + soft chords from bar 2, building into the score (Am · C · Am7 · F→G → C)
   const BASS={2:[['A1',0,5],['E2',6,2],['A2',10,3],['G2',14,2]],3:[['C2',0,5],['G2',6,2],['E2',10,3],['G2',14,2]],4:[['A1',0,5],['E2',6,2],['A2',10,3],['G2',14,2]],5:[['F2',0,7],['G2',8,7]]};
-  const BG={2:.42,3:.52,4:.56,5:.5};   // 03 is carried by the bass (as in v2), so it sits forward there
+  const BG={2:.294,3:.364,4:.392,5:.35};   // 03 is carried by the bass (as in v2); final: 30% under v9's level
   for(const b in BASS)BASS[b].forEach(([n,s,d])=>add('bass',at(+b,s),{m:mid(n),v:BG[b],dur:d}));
   const chord=(t,notes,v,dur,roll=.022)=>notes.forEach((n,i)=>add('piano',t+i*roll,{m:mid(n),v,dur}));
   chord(at(3),['C3','G3','D4','E4'],.22,2.3);chord(at(4),['A2','E3','G3','C4'],.23,2.3);chord(at(5),['F3','A3','C4','E4'],.18,1.4);chord(at(5,8),['G3','C4','D4'],.18,1.3);
@@ -302,6 +303,8 @@ function musicEvents(){
   // --- end: everything lands together on C — crash, kick, a floor tom, and one full block chord (not rolled) over the bass
   add('crash',at(12),{v:.52});add('kick',at(12),{v:.92});add('ltom',at(12),{f:82,v:.8,dec:.9});
   chord(at(12),['C3','G3','C4','E4','G4','C5'],.36,4.4,.006);add('piano',at(12),{m:mid('C2'),v:.3,dur:4.4});add('bass',at(12),{m:mid('C2'),v:.6,dur:20});
+  // every bass in the film (the 虚线 card, the film's bass line, the score's 虚线, the low C at the end) at 70%
+  for(const e of E)if(e.inst==='bass')e.v*=BASS_TRIM;
   return E}
 // a soft noise swell into the downbeat (04 → 05)
 Q.crash=(e,t)=>{const n=ctx.createBufferSource();n.buffer=noise;n.loop=true;const f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=4200;const f2=ctx.createBiquadFilter();f2.type='peaking';f2.frequency.value=7000;f2.gain.value=4;
@@ -321,9 +324,8 @@ Q.swell=(e,t)=>{const n=ctx.createBufferSource();n.buffer=noise;n.loop=true;cons
 
 // ================= field recordings (青山声音地图 + CC0) =================
 const REC={strings:'sfx/qs_xian_chan_lim.wav',night:'sfx/qs_yuye_chongming.mp3',bamboo:'sfx/335891__yoyodaman234__bamboo-creaking-in-wind.mp3',
-  leaves:'sfx/421791__markbolden__walking-through-leaves.wav',stream:'sfx/creek_loop.wav',birds:'sfx/qs_niaoqun.mp3',   // creek_loop = 共富坊旁边的小沟, looped
-  rainier:'sfx/rainier_stream.wav'};   // Oct12rainier-stream (SoundMat ambient library), for the end
-const LV={open:-50,night:-53,steps:-52,wind:-41,windBed:-52,water:-38,birds:-34,stopNight:-45,endNight:-52,endStream:-48};
+  leaves:'sfx/421791__markbolden__walking-through-leaves.wav',stream:'sfx/creek_loop.wav',birds:'sfx/qs_niaoqun.mp3'};   // creek_loop = 共富坊旁边的小沟, looped
+const LV={open:-50,night:-53,steps:-52,wind:-41,windBed:-52,water:-38,birds:-34,stopNight:-45,endNight:-52};
 const WB={walk:.62,choose:.48,stick:.48};   // the creek's level (× its stop level) once it has passed: under the walk · 02 · 03
 function recordings(){
   const R=[],ts=STOPS.map(([sp])=>stopTime(sp));
@@ -343,9 +345,8 @@ function recordings(){
   R.push({k:'birds',at:ts[2]-.1,off:0,dur:6.0,db:LV.birds,hp:260,pan:STOPS[2][2],env:[[ts[2]-.1,0],[ts[2]+.35,1],[ts[2]+4.4,.8],[ts[2]+5.9,0]]});
   R.push({k:'night',at:ts[3]-.1,off:24,dur:4.6,db:LV.stopNight,hp:520,lp:8000,pan:STOPS[3][2],env:[[ts[3]-.1,0],[ts[3]+.5,1],[ts[3]+2.6,.7],[ts[3]+4.4,0]]});
   // (nothing recorded while the score plays)
-  // end: the closing chord with 龙坞里雨夜的虫鸣 (as before), and the Rainier stream at half its v9 level underneath
+  // end: the closing chord with 龙坞里雨夜的虫鸣, nothing else
   const e0=at(12);R.push({k:'night',at:e0,off:21.5,dur:DUR-e0,db:LV.endNight,hp:450,lp:8000,env:[[e0,0],[e0+1.4,1],[DUR-1.3,1],[DUR,0]]});
-  R.push({k:'rainier',at:e0,off:12.4,dur:DUR-e0,db:LV.endStream,hp:150,lp:9000,env:[[e0,0],[e0+1.8,1],[DUR-1.3,1],[DUR,0]]});
   return R}
 
 // ================= offline render =================
